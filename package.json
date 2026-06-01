@@ -1,0 +1,33 @@
+{
+  "name": "vetmanagerpro",
+  "version": "1.0.0",
+  "description": "Proyecto: VetManagerPro\r Integrantes:\r M1. Feberlys Batista\r M2, M3. Miguel Guerrero\r M4. Eduardo Beati\r M6. Albert Garcia\r M7, M5. Erick Perez",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Feberlys/VetManagerPro.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Feberlys/VetManagerPro/issues"
+  },
+  "homepage": "https://github.com/Feberlys/VetManagerPro#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "msnodesqlv8": "^5.2.0",
+    "mssql": "^12.5.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
