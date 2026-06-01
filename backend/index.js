@@ -5,21 +5,23 @@ const { getConnection } = require('./src/config/db');
 
 const app = express();
 
-// Middlewares
-app.use(cors()); // Permite peticiones desde el frontend (React)
-app.use(express.json()); // Permite leer datos en formato JSON
+// 1. PRIMERO los Middlewares (Los traductores)
+app.use(cors()); 
+app.use(express.json()); // <-- ¡ESTO ES VITAL QUE ESTÉ AQUÍ!
 
 // Inicializar la conexión a la base de datos
 getConnection();
+
+// 2. DESPUÉS las Rutas (Las direcciones)
+const authRoutes = require('./src/routes/authRoutes');
+app.use('/api/auth', authRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
     res.json({ mensaje: 'API de VetManager Pro funcionando 🚀' });
 });
 
-// Configuración del puerto
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
