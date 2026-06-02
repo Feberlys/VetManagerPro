@@ -1,38 +1,32 @@
-import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from './context/AuthContext';
 import Login from './pages/Login';
-import GestionUsuarios from './pages/GestionUsuarios'; // <-- Aquí importamos la nueva pantalla
+import GestionUsuarios from './pages/GestionUsuarios';
+import Layout from './components/Layout'; // <-- Importamos tu nuevo caparazón
 
-// Componente para proteger rutas
+// Componente para proteger rutas Y envolverlas en el Layout
 const RutaProtegida = ({ children }) => {
     const { usuario, cargando } = useContext(AuthContext);
     
     if (cargando) return <div>Cargando...</div>;
     if (!usuario) return <Navigate to="/" />;
     
-    return children;
+    // Si está logueado, lo metemos dentro del Layout
+    return <Layout>{children}</Layout>;
 };
 
-// Dashboard actualizado con el botón
+// Dashboard Limpio (Ya no necesita menú ni botón de logout, el Layout lo hace)
 const Dashboard = () => {
-    const { usuario, logout } = useContext(AuthContext);
+    const { usuario } = useContext(AuthContext);
     return (
-        <div className="p-8">
-            <h1 className="text-2xl font-bold">¡Bienvenida al sistema, {usuario?.nombreCompleto}!</h1>
-            <p className="mt-2 text-gray-600">Rol ID: {usuario?.rolId}</p>
+        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">¡Hola, {usuario?.nombreCompleto}! 👋</h1>
+            <p className="text-gray-500">Bienvenido al panel de control de VetManager Pro.</p>
             
-            <div className="mt-6 space-x-4">
-                {/* Botón para ir a la gestión de usuarios (solo visible para admin) */}
-                {usuario?.rolId === 1 && (
-                    <Link to="/usuarios" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                        Gestionar Usuarios
-                    </Link>
-                )}
-                
-                <button onClick={logout} className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-                    Cerrar Sesión
-                </button>
+            <div className="mt-8 p-6 bg-emerald-50 rounded-xl border border-emerald-100">
+                <h3 className="text-emerald-800 font-bold mb-2">Resumen del sistema</h3>
+                <p className="text-emerald-600 text-sm">Selecciona una opción en el menú lateral para comenzar a trabajar.</p>
             </div>
         </div>
     );
@@ -42,10 +36,10 @@ function App() {
     return (
         <BrowserRouter>
             <Routes>
-                {/* Ruta pública */}
+                {/* Ruta pública (No lleva Layout porque ocupa toda la pantalla) */}
                 <Route path="/" element={<Login />} />
 
-                {/* Ruta privada: Dashboard */}
+                {/* Rutas privadas (Se inyectan dentro del caparazón) */}
                 <Route 
                     path="/dashboard" 
                     element={
@@ -55,7 +49,6 @@ function App() {
                     } 
                 />
 
-                {/* Ruta privada: Gestión de Usuarios */}
                 <Route 
                     path="/usuarios" 
                     element={
