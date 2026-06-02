@@ -10,6 +10,7 @@ import {
     Dog,
     Cat
 } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarDays, PawPrint, LogOut, Dog, Cat, Package } from 'lucide-react';
 
 const Layout = ({ children }) => {
     const { usuario, logout } = useContext(AuthContext);
@@ -26,6 +27,7 @@ const Layout = ({ children }) => {
         // Citas y Mascotas lo ven todos
         { path: '/citas', name: 'Citas', icon: CalendarDays, roles: [1, 2, 3] }, 
         { path: '/mascotas', name: 'Mascotas', icon: PawPrint, roles: [1, 2, 3] },
+        { path: '/inventario', name: 'Inventario', icon: Package, roles: [1, 2, 3] },
     ];
     
     return (

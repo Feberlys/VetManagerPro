@@ -4,6 +4,7 @@ import { AuthContext } from './context/AuthContext';
 import Login from './pages/Login';
 import GestionUsuarios from './pages/GestionUsuarios';
 import Layout from './components/Layout'; // <-- Importamos tu nuevo caparazón
+import GestionInventario from './pages/GestionInventario';
 
 // Componente para proteger rutas Y envolverlas en el Layout
 const RutaProtegida = ({ children }) => {
@@ -45,6 +46,15 @@ function App() {
                     element={
                         <RutaProtegida>
                             <Dashboard />
+                        </RutaProtegida>
+                    } 
+                />
+
+                <Route 
+                    path="/inventario" 
+                    element={
+                        <RutaProtegida>
+                            <GestionInventario />
                         </RutaProtegida>
                     } 
                 />
