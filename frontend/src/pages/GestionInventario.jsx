@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
-import { Package, ShieldAlert, Plus, Edit2, X, ArchiveX, AlertTriangle } from 'lucide-react';
+import { Package, ShieldAlert, Plus, Edit2, X, ArchiveX, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const GestionInventario = () => {
     const { usuario } = useContext(AuthContext);
@@ -10,6 +10,10 @@ const GestionInventario = () => {
     
     const [mostrarModal, setMostrarModal] = useState(false);
     const [modoEdicion, setModoEdicion] = useState(false);
+    
+    // Nuevo estado para la alerta bonita
+    const [confirmacion, setConfirmacion] = useState({ mostrar: false, id: null, estadoActual: null });
+
     const [formData, setFormData] = useState({
         id: null,
         nombre: '',
@@ -31,13 +35,22 @@ const GestionInventario = () => {
         }
     };
 
-    const handleDesactivar = async (id) => {
-        if (!window.confirm('¿Estás segura de que deseas marcar este producto como inactivo?')) return;
+    // Abre el modal bonito de confirmación
+    const pedirConfirmacion = (id, estadoActual) => {
+        setConfirmacion({ mostrar: true, id, estadoActual });
+    };
+
+    // Ejecuta la acción después de confirmar
+    const ejecutarCambioEstado = async () => {
+        const { id, estadoActual } = confirmacion;
+        const accion = estadoActual ? 'desactivar' : 'activar';
+        
         try {
-            await api.patch(`/productos/${id}/desactivar`);
+            await api.patch(`/productos/${id}/${accion}`);
+            setConfirmacion({ mostrar: false, id: null, estadoActual: null });
             cargarProductos();
         } catch (err) {
-            alert('Error al desactivar el producto');
+            alert(`Error al ${accion} el producto`);
         }
     };
 
@@ -155,20 +168,39 @@ const GestionInventario = () => {
                                     {(usuario?.rolId === 1 || usuario?.rolId === 3) && (
                                         <td className="py-4 px-6 text-right">
                                             <div className="flex justify-end gap-2">
+                                                
+                                                {/* Botón de Editar con lógica de bloqueo */}
                                                 <button 
                                                     onClick={() => abrirModalEditar(prod)}
-                                                    className="p-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-all"
+                                                    disabled={!prod.Estado}
+                                                    className={`p-2 border rounded-lg transition-all ${
+                                                        prod.Estado 
+                                                            ? 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50' 
+                                                            : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60'
+                                                    }`}
+                                                    title={prod.Estado ? "Editar Producto" : "Reactivar para editar"}
                                                 >
                                                     <Edit2 size={16} />
                                                 </button>
 
-                                                {usuario?.rolId === 1 && prod.Estado === true && (
-                                                    <button 
-                                                        onClick={() => handleDesactivar(prod.ProductoId)}
-                                                        className="p-2 bg-white border border-gray-300 rounded-lg text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
-                                                    >
-                                                        <ArchiveX size={16} />
-                                                    </button>
+                                                {usuario?.rolId === 1 && (
+                                                    prod.Estado === true ? (
+                                                        <button 
+                                                            onClick={() => pedirConfirmacion(prod.ProductoId, prod.Estado)}
+                                                            className="p-2 bg-white border border-gray-300 rounded-lg text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
+                                                            title="Desactivar Producto"
+                                                        >
+                                                            <ArchiveX size={16} />
+                                                        </button>
+                                                    ) : (
+                                                        <button 
+                                                            onClick={() => pedirConfirmacion(prod.ProductoId, prod.Estado)}
+                                                            className="p-2 bg-white border border-gray-300 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 transition-all"
+                                                            title="Reactivar Producto"
+                                                        >
+                                                            <CheckCircle size={16} />
+                                                        </button>
+                                                    )
                                                 )}
                                             </div>
                                         </td>
@@ -180,8 +212,9 @@ const GestionInventario = () => {
                 </div>
             </div>
 
+            {/* Modal de Crear/Editar */}
             {mostrarModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
                         <div className="flex justify-between items-center p-6 border-b border-gray-100">
                             <h2 className="text-xl font-bold text-gray-800">
@@ -220,8 +253,42 @@ const GestionInventario = () => {
                     </div>
                 </div>
             )}
+
+            {/* NUEVO: Modal Bonito de Confirmación */}
+            {confirmacion.mostrar && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden p-6 text-center transform transition-all">
+                        <div className={`mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4 ${confirmacion.estadoActual ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                            {confirmacion.estadoActual ? <ArchiveX size={32} /> : <CheckCircle size={32} />}
+                        </div>
+                        <h3 className="text-xl font-extrabold text-gray-900 mb-2">
+                            {confirmacion.estadoActual ? '¿Desactivar Producto?' : '¿Reactivar Producto?'}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-8 px-2">
+                            {confirmacion.estadoActual
+                                ? 'El producto ya no estará disponible para usarse en nuevas facturas o citas, pero se mantendrá en el historial.'
+                                : 'El producto volverá a estar disponible y se podrán editar sus datos de stock.'}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setConfirmacion({ mostrar: false, id: null, estadoActual: null })}
+                                className="w-1/2 py-2.5 px-4 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={ejecutarCambioEstado}
+                                className={`w-1/2 py-2.5 px-4 text-white font-bold rounded-lg shadow-sm transition-colors ${
+                                    confirmacion.estadoActual ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                                }`}
+                            >
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
-        
     );
 };
 

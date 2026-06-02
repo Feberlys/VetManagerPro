@@ -61,4 +61,20 @@ const desactivarProducto = async (req, res) => {
     }
 };
 
-module.exports = { listarProductos, registrarProducto, editarProducto, desactivarProducto };
+const activarProducto = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const activado = await productoModel.cambiarEstadoProducto(id, 1);
+        
+        if (activado) {
+            res.status(200).json({ mensaje: 'Producto reactivado con éxito' });
+        } else {
+            res.status(404).json({ error: 'Producto no encontrado' });
+        }
+    } catch (error) {
+        console.error('Error al reactivar producto:', error);
+        res.status(500).json({ error: 'Hubo un error al reactivar el producto' });
+    }
+};
+
+module.exports = { listarProductos, registrarProducto, editarProducto, desactivarProducto, activarProducto };
