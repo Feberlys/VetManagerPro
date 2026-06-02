@@ -12,9 +12,9 @@ const listarProductos = async (req, res) => {
 
 const registrarProducto = async (req, res) => {
     try {
-        const { nombre, descripcion, precio, stock } = req.body;
+        const { nombre, descripcion, cantidadActual, nivelMinimo } = req.body;
 
-        const creado = await productoModel.crearProducto({ nombre, descripcion, precio, stock });
+        const creado = await productoModel.crearProducto({ nombre, descripcion, cantidadActual, nivelMinimo });
 
         if (creado) {
             res.status(201).json({ mensaje: 'Producto registrado exitosamente' });
@@ -30,9 +30,9 @@ const registrarProducto = async (req, res) => {
 const editarProducto = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombre, descripcion, precio, stock } = req.body;
+        const { nombre, descripcion, cantidadActual, nivelMinimo } = req.body;
 
-        const actualizado = await productoModel.actualizarProducto(id, { nombre, descripcion, precio, stock });
+        const actualizado = await productoModel.actualizarProducto(id, { nombre, descripcion, cantidadActual, nivelMinimo });
         
         if (actualizado) {
             res.status(200).json({ mensaje: 'Producto actualizado con éxito' });
@@ -51,7 +51,7 @@ const desactivarProducto = async (req, res) => {
         const desactivado = await productoModel.cambiarEstadoProducto(id, 0);
         
         if (desactivado) {
-            res.status(200).json({ mensaje: 'Producto desactivado con éxito (Fuera de stock/inventario)' });
+            res.status(200).json({ mensaje: 'Producto desactivado con éxito' });
         } else {
             res.status(404).json({ error: 'Producto no encontrado' });
         }

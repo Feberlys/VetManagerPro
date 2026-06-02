@@ -1,22 +1,21 @@
 import { useState, useEffect, useContext } from 'react';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
-import { Package, ShieldAlert, Plus, Edit2, X, ArchiveX } from 'lucide-react';
+import { Package, ShieldAlert, Plus, Edit2, X, ArchiveX, AlertTriangle } from 'lucide-react';
 
 const GestionInventario = () => {
-    const { usuario } = useContext(AuthContext); // Traemos al usuario para saber su rol
+    const { usuario } = useContext(AuthContext);
     const [productos, setProductos] = useState([]);
     const [error, setError] = useState('');
     
-    // Estados para el Modal
     const [mostrarModal, setMostrarModal] = useState(false);
     const [modoEdicion, setModoEdicion] = useState(false);
     const [formData, setFormData] = useState({
         id: null,
         nombre: '',
         descripcion: '',
-        precio: '',
-        stock: ''
+        cantidadActual: '',
+        nivelMinimo: ''
     });
 
     useEffect(() => {
@@ -44,7 +43,7 @@ const GestionInventario = () => {
 
     const abrirModalCrear = () => {
         setModoEdicion(false);
-        setFormData({ id: null, nombre: '', descripcion: '', precio: '', stock: '' });
+        setFormData({ id: null, nombre: '', descripcion: '', cantidadActual: '', nivelMinimo: '' });
         setMostrarModal(true);
     };
 
@@ -54,8 +53,8 @@ const GestionInventario = () => {
             id: prod.ProductoId,
             nombre: prod.Nombre,
             descripcion: prod.Descripcion,
-            precio: prod.Precio,
-            stock: prod.Stock
+            cantidadActual: prod.CantidadActual,
+            nivelMinimo: prod.NivelMinimo
         });
         setMostrarModal(true);
     };
@@ -66,8 +65,8 @@ const GestionInventario = () => {
             const payload = {
                 nombre: formData.nombre,
                 descripcion: formData.descripcion,
-                precio: parseFloat(formData.precio),
-                stock: parseInt(formData.stock)
+                cantidadActual: parseInt(formData.cantidadActual),
+                nivelMinimo: parseInt(formData.nivelMinimo)
             };
 
             if (modoEdicion) {
@@ -91,10 +90,9 @@ const GestionInventario = () => {
                         <Package className="text-emerald-600" size={32} />
                         Inventario de Clínica
                     </h1>
-                    <p className="text-gray-500 mt-1">Catálogo de productos, medicamentos y servicios (M7).</p>
+                    <p className="text-gray-500 mt-1">Catálogo de productos y medicamentos (M7).</p>
                 </div>
-                {/* Solo el Admin (Rol 1) puede agregar productos */}
-                {usuario?.rolId === 1 && (
+                {(usuario?.rolId === 1 || usuario?.rolId === 3) && (
                     <button 
                         onClick={abrirModalCrear}
                         className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg font-bold shadow-sm transition-colors"
@@ -117,15 +115,17 @@ const GestionInventario = () => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-xs uppercase tracking-wider">
-                                <th className="py-4 px-6 font-semibold">Producto / Servicio</th>
-                                <th className="py-4 px-6 font-semibold">Precio (RD$)</th>
-                                <th className="py-4 px-6 font-semibold">Stock</th>
+                                <th className="py-4 px-6 font-semibold">Producto</th>
+                                <th className="py-4 px-6 font-semibold">Stock Actual</th>
+                                <th className="py-4 px-6 font-semibold">Nivel Mínimo</th>
                                 <th className="py-4 px-6 font-semibold">Estado</th>
-                                {usuario?.rolId === 1 && <th className="py-4 px-6 font-semibold text-right">Acciones</th>}
+                                {(usuario?.rolId === 1 || usuario?.rolId === 3) && <th className="py-4 px-6 font-semibold text-right">Acciones</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {productos.map((prod) => (
+                            {productos.map((prod) => {
+                                const stockBajo = prod.CantidadActual <= prod.NivelMinimo;
+                                return (
                                 <tr key={prod.ProductoId} className="hover:bg-gray-50/50 transition-colors">
                                     <td className="py-4 px-6">
                                         <div className="flex flex-col">
@@ -133,12 +133,15 @@ const GestionInventario = () => {
                                             <span className="text-xs text-gray-500">{prod.Descripcion}</span>
                                         </div>
                                     </td>
-                                    <td className="py-4 px-6 text-sm font-medium text-gray-700">
-                                        ${prod.Precio.toFixed(2)}
+                                    <td className="py-4 px-6">
+                                        <div className={`flex items-center gap-1.5 text-sm font-bold ${stockBajo ? 'text-red-600' : 'text-emerald-600'}`}>
+                                            {stockBajo && <AlertTriangle size={16} />}
+                                            {prod.CantidadActual} unds.
+                                        </div>
                                     </td>
                                     <td className="py-4 px-6">
-                                        <span className={`text-sm font-bold ${prod.Stock <= 5 ? 'text-red-600' : 'text-emerald-600'}`}>
-                                            {prod.Stock} unds.
+                                        <span className="text-sm font-medium text-gray-500">
+                                            {prod.NivelMinimo} unds.
                                         </span>
                                     </td>
                                     <td className="py-4 px-6">
@@ -149,8 +152,7 @@ const GestionInventario = () => {
                                         </span>
                                     </td>
                                     
-                                    {/* Controles de Admin */}
-                                    {usuario?.rolId === 1 && (
+                                    {(usuario?.rolId === 1 || usuario?.rolId === 3) && (
                                         <td className="py-4 px-6 text-right">
                                             <div className="flex justify-end gap-2">
                                                 <button 
@@ -160,7 +162,7 @@ const GestionInventario = () => {
                                                     <Edit2 size={16} />
                                                 </button>
 
-                                                {prod.Estado === true && (
+                                                {usuario?.rolId === 1 && prod.Estado === true && (
                                                     <button 
                                                         onClick={() => handleDesactivar(prod.ProductoId)}
                                                         className="p-2 bg-white border border-gray-300 rounded-lg text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
@@ -172,13 +174,12 @@ const GestionInventario = () => {
                                         </td>
                                     )}
                                 </tr>
-                            ))}
+                            )})}
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            {/* Modal de Crear/Editar */}
             {mostrarModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
@@ -197,17 +198,17 @@ const GestionInventario = () => {
                                 <input type="text" required value={formData.nombre} onChange={(e) => setFormData({...formData, nombre: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Descripción (Opcional)</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Descripción</label>
                                 <input type="text" value={formData.descripcion} onChange={(e) => setFormData({...formData, descripcion: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
                             </div>
                             <div className="flex gap-4">
                                 <div className="w-1/2">
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Precio</label>
-                                    <input type="number" step="0.01" required value={formData.precio} onChange={(e) => setFormData({...formData, precio: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Cant. Actual</label>
+                                    <input type="number" required value={formData.cantidadActual} onChange={(e) => setFormData({...formData, cantidadActual: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
                                 </div>
                                 <div className="w-1/2">
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Stock</label>
-                                    <input type="number" required value={formData.stock} onChange={(e) => setFormData({...formData, stock: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Nivel Mínimo</label>
+                                    <input type="number" required value={formData.nivelMinimo} onChange={(e) => setFormData({...formData, nivelMinimo: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
                                 </div>
                             </div>
 
@@ -220,6 +221,7 @@ const GestionInventario = () => {
                 </div>
             )}
         </div>
+        
     );
 };
 

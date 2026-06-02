@@ -8,9 +8,9 @@ import {
     PawPrint, 
     LogOut,
     Dog,
-    Cat
+    Cat,
+    Package
 } from 'lucide-react';
-import { LayoutDashboard, Users, CalendarDays, PawPrint, LogOut, Dog, Cat, Package } from 'lucide-react';
 
 const Layout = ({ children }) => {
     const { usuario, logout } = useContext(AuthContext);

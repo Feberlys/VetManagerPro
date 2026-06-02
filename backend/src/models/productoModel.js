@@ -1,10 +1,10 @@
-const { getConnection, sql } = require('../../config/db'); // Ajusta la ruta si tu db.js está en otro lado
+const { getConnection, sql } = require('../config/db');
 
 const obtenerProductos = async () => {
     const pool = await getConnection();
     const result = await pool.request()
         .query(`
-            SELECT ProductoId, Nombre, Descripcion, Precio, Stock, Estado 
+            SELECT ProductoId, Nombre, Descripcion, CantidadActual, NivelMinimo, Estado, FechaRegistro 
             FROM Productos
         `);
     return result.recordset;
@@ -15,11 +15,11 @@ const crearProducto = async (datos) => {
     const result = await pool.request()
         .input('nombre', sql.NVarChar, datos.nombre)
         .input('descripcion', sql.NVarChar, datos.descripcion || '')
-        .input('precio', sql.Decimal(10, 2), datos.precio)
-        .input('stock', sql.Int, datos.stock)
+        .input('cantidadActual', sql.Int, datos.cantidadActual)
+        .input('nivelMinimo', sql.Int, datos.nivelMinimo)
         .query(`
-            INSERT INTO Productos (Nombre, Descripcion, Precio, Stock, Estado)
-            VALUES (@nombre, @descripcion, @precio, @stock, 1)
+            INSERT INTO Productos (Nombre, Descripcion, CantidadActual, NivelMinimo, Estado)
+            VALUES (@nombre, @descripcion, @cantidadActual, @nivelMinimo, 1)
         `);
     return result.rowsAffected[0] > 0;
 };
@@ -30,11 +30,11 @@ const actualizarProducto = async (id, datos) => {
         .input('id', sql.Int, id)
         .input('nombre', sql.NVarChar, datos.nombre)
         .input('descripcion', sql.NVarChar, datos.descripcion || '')
-        .input('precio', sql.Decimal(10, 2), datos.precio)
-        .input('stock', sql.Int, datos.stock)
+        .input('cantidadActual', sql.Int, datos.cantidadActual)
+        .input('nivelMinimo', sql.Int, datos.nivelMinimo)
         .query(`
             UPDATE Productos 
-            SET Nombre = @nombre, Descripcion = @descripcion, Precio = @precio, Stock = @stock
+            SET Nombre = @nombre, Descripcion = @descripcion, CantidadActual = @cantidadActual, NivelMinimo = @nivelMinimo
             WHERE ProductoId = @id
         `);
     return result.rowsAffected[0] > 0;
