@@ -26,4 +26,13 @@ const esAdmin = (req, res, next) => {
     next();
 };
 
-module.exports = { verificarToken, esAdmin };
+const esAdminORecepcionista = (req, res, next) => {
+    // Si es Admin (1) o Recepcionista (3), lo dejamos pasar
+    if (req.usuario && (req.usuario.rolId === 1 || req.usuario.rolId === 3)) {
+        next();
+    } else {
+        return res.status(403).json({ error: 'Acceso denegado. Requiere rol de Administrador o Recepcionista.' });
+    }
+};
+
+module.exports = { verificarToken, esAdmin, esAdminORecepcionista };

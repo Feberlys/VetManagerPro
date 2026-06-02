@@ -20,6 +20,10 @@ app.use('/api/auth', authRoutes);
 const usuarioRoutes = require('./src/routes/usuarioRoutes');
 app.use('/api/usuarios', usuarioRoutes);
 
+//Ruta de productos
+const productoRoutes = require('./src/routes/productoRoutes');
+app.use('/api/productos', productoRoutes);
+
 // Ruta de prueba
 app.get('/', (req, res) => {
     res.json({ mensaje: 'API de VetManager Pro funcionando 🚀' });
