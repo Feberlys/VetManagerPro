@@ -16,6 +16,10 @@ getConnection();
 const authRoutes = require('./src/routes/authRoutes');
 app.use('/api/auth', authRoutes);
 
+// Agregar la nueva ruta de usuarios
+const usuarioRoutes = require('./src/routes/usuarioRoutes');
+app.use('/api/usuarios', usuarioRoutes);
+
 // Ruta de prueba
 app.get('/', (req, res) => {
     res.json({ mensaje: 'API de VetManager Pro funcionando 🚀' });

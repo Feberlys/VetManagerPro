@@ -28,4 +28,49 @@ const crearUsuario = async (usuario) => {
     return result.recordset[0];
 };
 
-module.exports = { buscarUsuarioPorCorreo, crearUsuario };
+const obtenerUsuarios = async () => {
+    const pool = await getConnection();
+    const result = await pool.request()
+        .query(`
+            SELECT UsuarioId, NombreUsuario, NombreCompleto, Correo, RolId, Estado 
+            FROM Usuarios
+        `);
+    // Nota: Nunca seleccionamos el PasswordHash por seguridad
+    return result.recordset;
+};
+
+const actualizarUsuario = async (id, datos) => {
+    const pool = await getConnection();
+    const result = await pool.request()
+        .input('id', sql.Int, id)
+        .input('nombreCompleto', sql.NVarChar, datos.nombreCompleto)
+        .input('rolId', sql.Int, datos.rolId)
+        .query(`
+            UPDATE Usuarios 
+            SET NombreCompleto = @nombreCompleto, RolId = @rolId
+            WHERE UsuarioId = @id
+        `);
+    return result.rowsAffected[0] > 0;
+};
+
+const cambiarEstadoUsuario = async (id, estado) => {
+    const pool = await getConnection();
+    const result = await pool.request()
+        .input('id', sql.Int, id)
+        .input('estado', sql.Bit, estado)
+        .query(`
+            UPDATE Usuarios 
+            SET Estado = @estado
+            WHERE UsuarioId = @id
+        `);
+    return result.rowsAffected[0] > 0;
+};
+
+// No olvides exportar las nuevas funciones
+module.exports = { 
+    buscarUsuarioPorCorreo, 
+    crearUsuario, 
+    obtenerUsuarios, 
+    actualizarUsuario, 
+    cambiarEstadoUsuario 
+};
