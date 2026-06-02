@@ -15,15 +15,19 @@ const Layout = ({ children }) => {
     const { usuario, logout } = useContext(AuthContext);
     const location = useLocation(); // Para saber en qué página estamos y pintar el botón activo
 
-    // Definimos el menú centralizado
+   // Definimos el menú centralizado
     const menuItems = [
-        { path: '/dashboard', name: 'Dashboard', icon: LayoutDashboard, roles: [1, 2] },
-        { path: '/usuarios', name: 'Usuarios', icon: Users, roles: [1] }, // Solo admin
-        // Aquí dejarás listos los espacios para tus compañeros:
-        { path: '/citas', name: 'Citas', icon: CalendarDays, roles: [1, 2] }, 
-        { path: '/mascotas', name: 'Mascotas', icon: PawPrint, roles: [1, 2] },
+        // El Dashboard lo ven todos (Admin: 1, Vet: 2, Recep: 3)
+        { path: '/dashboard', name: 'Dashboard', icon: LayoutDashboard, roles: [1, 2, 3] }, 
+        
+        // Usuarios SOLO lo ve el Admin (RF-03)
+        { path: '/usuarios', name: 'Usuarios', icon: Users, roles: [1] }, 
+        
+        // Citas y Mascotas lo ven todos
+        { path: '/citas', name: 'Citas', icon: CalendarDays, roles: [1, 2, 3] }, 
+        { path: '/mascotas', name: 'Mascotas', icon: PawPrint, roles: [1, 2, 3] },
     ];
-
+    
     return (
         <div className="flex h-screen bg-gray-50 font-sans">
             

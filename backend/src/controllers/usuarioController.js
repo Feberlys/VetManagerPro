@@ -1,4 +1,5 @@
 const usuarioModel = require('../models/usuarioModel');
+const bcrypt = require('bcryptjs');
 
 const listarUsuarios = async (req, res) => {
     try {
@@ -31,7 +32,6 @@ const editarUsuario = async (req, res) => {
 const desactivarUsuario = async (req, res) => {
     try {
         const { id } = req.params;
-        // Asumimos que si llaman a esta ruta, quieren desactivarlo (Estado = 0)
         const desactivado = await usuarioModel.cambiarEstadoUsuario(id, 0);
         
         if (desactivado) {
@@ -45,4 +45,32 @@ const desactivarUsuario = async (req, res) => {
     }
 };
 
-module.exports = { listarUsuarios, editarUsuario, desactivarUsuario };
+const crearUsuarioAdmin = async (req, res) => {
+    try {
+        const { nombreUsuario, nombreCompleto, correo, password, rolId } = req.body;
+
+        // Validar si el usuario ya existe
+        const existe = await usuarioModel.buscarUsuarioPorCorreo(correo);
+        if (existe) {
+            return res.status(400).json({ error: 'El correo ya está registrado en el sistema.' });
+        }
+
+        // Encriptar contraseña
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
+
+        // Llamamos al modelo (pasando los parámetros sueltos, como seguro lo tenías en tu ruta de auth)
+        const creado = await usuarioModel.crearUsuario({nombreUsuario, nombreCompleto, correo, passwordHash, rolId});
+
+        if (creado) {
+            res.status(201).json({ mensaje: 'Usuario creado exitosamente' });
+        } else {
+            res.status(500).json({ error: 'No se pudo registrar el usuario' });
+        }
+    } catch (error) {
+        console.error('Error al crear usuario desde Admin:', error);
+        res.status(500).json({ error: 'Hubo un error interno al crear el usuario' });
+    }
+};
+
+module.exports = { listarUsuarios, editarUsuario, desactivarUsuario, crearUsuarioAdmin };
