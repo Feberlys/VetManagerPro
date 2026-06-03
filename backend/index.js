@@ -24,6 +24,18 @@ app.use('/api/usuarios', usuarioRoutes);
 const productoRoutes = require('./src/routes/productoRoutes');
 app.use('/api/productos', productoRoutes);
 
+// Ruta de clientes
+const clienteRoutes = require('./src/routes/clienteRoutes');
+app.use('/api/clientes', clienteRoutes);
+
+// Ruta de mascotas
+const mascotaRoutes = require('./src/routes/mascotaRoutes');
+app.use('/api/mascotas', mascotaRoutes);
+
+// Ruta de citas
+const citaRoutes = require('./src/routes/citaRoutes');
+app.use('/api/citas', citaRoutes);
+
 // Ruta de prueba
 app.get('/', (req, res) => {
     res.json({ mensaje: 'API de VetManager Pro funcionando 🚀' });
