@@ -5,6 +5,9 @@ import Login from './pages/Login';
 import GestionUsuarios from './pages/GestionUsuarios';
 import Layout from './components/Layout'; // <-- Importamos tu nuevo caparazón
 import GestionInventario from './pages/GestionInventario';
+import GestionClientes from './pages/GestionClientes';
+import GestionMascotas from './pages/GestionMascotas';
+import GestionCitas from './pages/GestionCitas';
 import GestionGuarderia from './pages/GestionGuarderia';
 
 // Componente para proteger rutas Y envolverlas en el Layout
@@ -38,10 +41,8 @@ function App() {
     return (
         <BrowserRouter>
             <Routes>
-                {/* Ruta pública (No lleva Layout porque ocupa toda la pantalla) */}
                 <Route path="/" element={<Login />} />
 
-                {/* Rutas privadas (Se inyectan dentro del caparazón) */}
                 <Route 
                     path="/dashboard" 
                     element={
@@ -52,14 +53,41 @@ function App() {
                 />
 
                 <Route 
-                    path="/inventario" 
+                    path="/usuarios" 
                     element={
                         <RutaProtegida>
-                            <GestionInventario />
+                            <GestionUsuarios />
                         </RutaProtegida>
                     } 
                 />
-                
+
+                <Route 
+                    path="/clientes" 
+                    element={
+                        <RutaProtegida>
+                            <GestionClientes />
+                        </RutaProtegida>
+                    } 
+                />
+
+                <Route 
+                    path="/mascotas" 
+                    element={
+                        <RutaProtegida>
+                            <GestionMascotas />
+                        </RutaProtegida>
+                    } 
+                />
+
+                <Route 
+                    path="/citas" 
+                    element={
+                        <RutaProtegida>
+                            <GestionCitas />
+                        </RutaProtegida>
+                    } 
+                />
+
                 <Route 
                     path="/guarderia" 
                     element={
@@ -70,10 +98,10 @@ function App() {
                 />
 
                 <Route 
-                    path="/usuarios" 
+                    path="/inventario" 
                     element={
                         <RutaProtegida>
-                            <GestionUsuarios />
+                            <GestionInventario />
                         </RutaProtegida>
                     } 
                 />
