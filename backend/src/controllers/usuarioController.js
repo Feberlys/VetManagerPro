@@ -73,4 +73,20 @@ const crearUsuarioAdmin = async (req, res) => {
     }
 };
 
-module.exports = { listarUsuarios, editarUsuario, desactivarUsuario, crearUsuarioAdmin };
+const activarUsuario = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const activado = await usuarioModel.cambiarEstadoUsuario(id, 1); // 1 = Activo
+        
+        if (activado) {
+            res.status(200).json({ mensaje: 'Usuario reactivado con éxito' });
+        } else {
+            res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+    } catch (error) {
+        console.error('Error al reactivar usuario:', error);
+        res.status(500).json({ error: 'Hubo un error al reactivar el usuario' });
+    }
+};
+
+module.exports = { listarUsuarios, editarUsuario, desactivarUsuario, crearUsuarioAdmin, activarUsuario };
