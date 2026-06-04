@@ -25,6 +25,7 @@ const Layout = ({ children }) => {
         { path: '/usuarios', name: 'Usuarios', icon: Users, roles: [1] }, 
         
         // Citas y Mascotas lo ven todos
+        { path: '/clientes', name: 'Clientes', icon: Users, roles: [1, 2, 3] },
         { path: '/citas', name: 'Citas', icon: CalendarDays, roles: [1, 2, 3] }, 
         { path: '/mascotas', name: 'Mascotas', icon: PawPrint, roles: [1, 2, 3] },
         { path: '/inventario', name: 'Inventario', icon: Package, roles: [1, 2, 3] },

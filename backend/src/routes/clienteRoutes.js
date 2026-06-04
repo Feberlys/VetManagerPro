@@ -7,7 +7,6 @@ const {
   buscarClientes,
   crearCliente,
   editarCliente,
-  desactivarCliente
 } = require('../controllers/clienteController');
 
 const { verificarToken } = require('../middlewares/authMiddleware');
@@ -17,6 +16,5 @@ router.get('/buscar', verificarToken, buscarClientes);
 router.get('/:id', verificarToken, obtenerCliente);
 router.post('/', verificarToken, crearCliente);
 router.put('/:id', verificarToken, editarCliente);
-router.patch('/:id/desactivar', verificarToken, desactivarCliente);
 
 module.exports = router;

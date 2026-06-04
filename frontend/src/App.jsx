@@ -5,6 +5,9 @@ import Login from './pages/Login';
 import GestionUsuarios from './pages/GestionUsuarios';
 import Layout from './components/Layout'; // <-- Importamos tu nuevo caparazón
 import GestionInventario from './pages/GestionInventario';
+import GestionClientes from './pages/GestionClientes';
+import GestionMascotas from './pages/GestionMascotas';
+import GestionCitas from './pages/GestionCitas';
 
 // Componente para proteger rutas Y envolverlas en el Layout
 const RutaProtegida = ({ children }) => {
@@ -67,6 +70,32 @@ function App() {
                         </RutaProtegida>
                     } 
                 />
+                <Route 
+    path="/clientes" 
+    element={
+        <RutaProtegida>
+            <GestionClientes />
+        </RutaProtegida>
+    } 
+/>
+
+<Route 
+    path="/mascotas" 
+    element={
+        <RutaProtegida>
+            <GestionMascotas />
+        </RutaProtegida>
+    } 
+/>
+<Route 
+    path="/citas" 
+    element={
+        <RutaProtegida>
+            <GestionCitas />
+        </RutaProtegida>
+    } 
+/>
+
             </Routes>
         </BrowserRouter>
     );

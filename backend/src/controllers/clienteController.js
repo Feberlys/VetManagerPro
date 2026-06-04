@@ -76,27 +76,10 @@ const editarCliente = async (req, res) => {
   }
 };
 
-const desactivarCliente = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const desactivado = await clienteModel.cambiarEstadoCliente(id, 0);
-
-    if (desactivado) {
-      res.status(200).json({ mensaje: 'Cliente desactivado con éxito' });
-    } else {
-      res.status(404).json({ error: 'Cliente no encontrado' });
-    }
-  } catch (error) {
-    console.error('Error al desactivar cliente:', error);
-    res.status(500).json({ error: 'Hubo un error al desactivar el cliente' });
-  }
-};
-
 module.exports = {
   listarClientes,
   obtenerCliente,
   buscarClientes,
   crearCliente,
   editarCliente,
-  desactivarCliente
 };
