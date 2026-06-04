@@ -1,12 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import api from '../services/api';
-
+import { AuthContext } from '../context/AuthContext';
 
 const GestionGuarderia = () => {
   const { usuario } = useContext(AuthContext);
   const esAdmin = usuario?.rolId === 1;
-  import { useContext } from 'react';
-  import { AuthContext } from '../context/AuthContext';
+  
   const [espacios, setEspacios] = useState([]);
   const [espaciosDisponibles, setEspaciosDisponibles] = useState([]);
   const [ocupacion, setOcupacion] = useState([]);
@@ -115,7 +114,7 @@ const GestionGuarderia = () => {
   };
 
   const hacerCheckOut = async (hospedajeId) => {
-    const confirmar = confirm('¿Seguro que deseas hacer check-out de esta mascota?');
+    const confirmar = window.confirm('¿Seguro que deseas hacer check-out de esta mascota?');
 
     if (!confirmar) return;
 
