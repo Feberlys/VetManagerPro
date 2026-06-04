@@ -36,10 +36,15 @@ app.use('/api/mascotas', mascotaRoutes);
 const citaRoutes = require('./src/routes/citaRoutes');
 app.use('/api/citas', citaRoutes);
 
+// Ruta de guarderia
+const guarderiaRoutes = require('./src/routes/guarderiaRoutes');
+app.use('/api/guarderia', guarderiaRoutes);
+
 // Ruta de prueba
 app.get('/', (req, res) => {
     res.json({ mensaje: 'API de VetManager Pro funcionando 🚀' });
 });
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
