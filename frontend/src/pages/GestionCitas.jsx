@@ -9,6 +9,9 @@ const GestionCitas = () => {
   const { usuario } = useContext(AuthContext);
   const [citas, setCitas] = useState([]);
   const [filtroEstado, setFiltroEstado] = useState('todas');
+  const [filtroMes, setFiltroMes] = useState('');
+  const [filtroAnio, setFiltroAnio] = useState('');
+  const [filtroSemana, setFiltroSemana] = useState('');
   const [mascotas, setMascotas] = useState([]);
   const [veterinarios, setVeterinarios] = useState([]);
   const [error, setError] = useState('');
@@ -47,9 +50,28 @@ const GestionCitas = () => {
   }, []);
 
   const citasFiltradas = citas.filter((cita) => {
-    if (filtroEstado === 'todas') return true;
-    return Number(cita.EstadoCitaId) === Number(filtroEstado);
-  });
+  const fecha = new Date(cita.FechaHora);
+
+  const coincideEstado =
+    filtroEstado === 'todas' ||
+    Number(cita.EstadoCitaId) === Number(filtroEstado);
+
+  const coincideMes =
+    filtroMes === '' ||
+    fecha.getMonth() + 1 === Number(filtroMes);
+
+  const coincideAnio =
+    filtroAnio === '' ||
+    fecha.getFullYear() === Number(filtroAnio);
+
+  const semanaDelMes = Math.ceil(fecha.getDate() / 7);
+
+  const coincideSemana =
+    filtroSemana === '' ||
+    semanaDelMes === Number(filtroSemana);
+
+  return coincideEstado && coincideMes && coincideAnio && coincideSemana;
+});
 
   const abrirModalCrear = () => {
     setModoEdicion(false);
@@ -136,6 +158,13 @@ const GestionCitas = () => {
     }
   };
 
+  const limpiarFiltros = () => {
+  setFiltroEstado('todas');
+  setFiltroMes('');
+  setFiltroAnio('');
+  setFiltroSemana('');
+};
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -184,26 +213,89 @@ const GestionCitas = () => {
         )}
       </div>
 
-      <div className="mb-6 bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-wrap gap-2">
-        {[
-          { valor: 'todas', texto: 'Todas', clase: 'bg-emerald-600' },
-          { valor: '1', texto: 'Pendientes', clase: 'bg-yellow-500' },
-          { valor: '2', texto: 'Atendidas', clase: 'bg-emerald-600' },
-          { valor: '3', texto: 'Canceladas', clase: 'bg-red-600' }
-        ].map((item) => (
-          <button
-            key={item.valor}
-            onClick={() => setFiltroEstado(item.valor)}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
-              filtroEstado === item.valor
-                ? `${item.clase} text-white`
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {item.texto}
-          </button>
-        ))}
-      </div>
+    <div className="mb-6 bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-4">
+      <div className="flex flex-wrap gap-2">
+    {[
+      { valor: 'todas', texto: 'Todas', clase: 'bg-emerald-600' },
+      { valor: '1', texto: 'Pendientes', clase: 'bg-yellow-500' },
+      { valor: '2', texto: 'Atendidas', clase: 'bg-emerald-600' },
+      { valor: '3', texto: 'Canceladas', clase: 'bg-red-600' }
+    ].map((item) => (
+      <button
+        key={item.valor}
+        onClick={() => setFiltroEstado(item.valor)}
+        className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
+          filtroEstado === item.valor
+            ? `${item.clase} text-white`
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        {item.texto}
+      </button>
+    ))}
+  </div>
+
+  <div className="flex flex-wrap gap-3 items-center">
+
+    <select
+  value={filtroSemana}
+  onChange={(e) => setFiltroSemana(e.target.value)}
+  className="px-3 py-2 border border-gray-300 rounded-lg"
+>
+  <option value="">Todas las semanas</option>
+  <option value="1">Semana 1</option>
+  <option value="2">Semana 2</option>
+  <option value="3">Semana 3</option>
+  <option value="4">Semana 4</option>
+  <option value="5">Semana 5</option>
+    </select>
+
+    <select
+      value={filtroMes}
+      onChange={(e) => setFiltroMes(e.target.value)}
+      className="px-3 py-2 border border-gray-300 rounded-lg"
+    >
+      <option value="">Todos los meses</option>
+      <option value="1">Enero</option>
+      <option value="2">Febrero</option>
+      <option value="3">Marzo</option>
+      <option value="4">Abril</option>
+      <option value="5">Mayo</option>
+      <option value="6">Junio</option>
+      <option value="7">Julio</option>
+      <option value="8">Agosto</option>
+      <option value="9">Septiembre</option>
+      <option value="10">Octubre</option>
+      <option value="11">Noviembre</option>
+      <option value="12">Diciembre</option>
+    </select>
+
+    <select
+      value={filtroAnio}
+      onChange={(e) => setFiltroAnio(e.target.value)}
+      className="px-3 py-2 border border-gray-300 rounded-lg"
+    >
+      <option value="">Todos los años</option>
+      <option value="2025">2025</option>
+      <option value="2026">2026</option>
+      <option value="2027">2027</option>
+      <option value="2028">2028</option>
+    </select>
+
+    <button
+      onClick={limpiarFiltros}
+      className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-bold"
+    >
+      Limpiar filtros
+    </button>
+
+    <span className="text-sm text-gray-500">
+      Mostrando {citasFiltradas.length} de {citas.length} citas
+    </span>
+
+  </div>
+
+</div>
 
       {error && (
         <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-r-md flex items-center gap-2">
