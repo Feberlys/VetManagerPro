@@ -35,4 +35,12 @@ const esAdminORecepcionista = (req, res, next) => {
     }
 };
 
-module.exports = { verificarToken, esAdmin, esAdminORecepcionista };
+// Verifica que el usuario sea Veterinario (M4 - Historial Médico)
+const esVeterinario = (req, res, next) => {
+    if (req.usuario.rolId !== 2) {
+        return res.status(403).json({ error: 'Acceso denegado. Se requiere rol de Veterinario.' });
+    }
+    next();
+};
+
+module.exports = { verificarToken, esAdmin, esAdminORecepcionista, esVeterinario };

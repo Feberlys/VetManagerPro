@@ -24,6 +24,13 @@ app.use('/api/usuarios', usuarioRoutes);
 const productoRoutes = require('./src/routes/productoRoutes');
 app.use('/api/productos', productoRoutes);
 
+// Rutas de M4 - Historial Médico (Eduardo)
+const historialRoutes = require('./src/routes/historialRoutes');
+app.use('/api/historial', historialRoutes);
+
+const vacunaRoutes = require('./src/routes/vacunaRoutes');
+app.use('/api/vacunas', vacunaRoutes);
+
 // Ruta de prueba
 app.get('/', (req, res) => {
     res.json({ mensaje: 'API de VetManager Pro funcionando 🚀' });
