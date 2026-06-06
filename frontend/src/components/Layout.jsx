@@ -10,7 +10,7 @@ import {
     Dog,
     Cat,
     Package,
-    Stethoscope
+    Stethoscope,
     Hotel
 } from 'lucide-react';
 
