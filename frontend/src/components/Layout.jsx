@@ -9,7 +9,8 @@ import {
     LogOut,
     Dog,
     Cat,
-    Package
+    Package,
+    Stethoscope
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
@@ -28,6 +29,7 @@ const Layout = ({ children }) => {
         { path: '/citas', name: 'Citas', icon: CalendarDays, roles: [1, 2, 3] }, 
         { path: '/mascotas', name: 'Mascotas', icon: PawPrint, roles: [1, 2, 3] },
         { path: '/inventario', name: 'Inventario', icon: Package, roles: [1, 2, 3] },
+        { path: '/historial', name: 'Historial', icon: Stethoscope, roles: [1, 2, 3] },
     ];
     
     return (

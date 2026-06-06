@@ -54,10 +54,12 @@ const crearConsulta = async (mascotaId, citaId, veterinarioId, diagnostico, trat
     return result.recordset[0].HistorialId;
 };
 
-// RF-15 + RF-17: Obtener historial completo de una mascota
+// RF-15 + RF-17: Obtener historial completo de una mascota (con productos por consulta)
 const obtenerHistorialPorMascota = async (mascotaId) => {
     const pool = await getConnection();
-    const result = await pool.request()
+
+    // 1. Traer las consultas
+    const consultas = await pool.request()
         .input('MascotaId', sql.Int, mascotaId)
         .query(`
             SELECT 
@@ -75,7 +77,27 @@ const obtenerHistorialPorMascota = async (mascotaId) => {
             WHERE h.MascotaId = @MascotaId
             ORDER BY h.FechaConsulta DESC
         `);
-    return result.recordset;
+
+    // 2. Traer todos los productos de esas consultas en una sola query
+    const productos = await pool.request()
+        .input('MascotaId', sql.Int, mascotaId)
+        .query(`
+            SELECT 
+                hp.HistorialId,
+                hp.ProductoId,
+                p.Nombre AS NombreProducto,
+                hp.Cantidad
+            FROM HistorialProductos hp
+            INNER JOIN Productos p ON hp.ProductoId = p.ProductoId
+            INNER JOIN HistorialMedico h ON hp.HistorialId = h.HistorialId
+            WHERE h.MascotaId = @MascotaId
+        `);
+
+    // 3. Agrupar los productos dentro de cada consulta
+    return consultas.recordset.map(c => ({
+        ...c,
+        productosUsados: productos.recordset.filter(p => p.HistorialId === c.HistorialId)
+    }));
 };
 
 // Obtener detalle de una consulta con los productos usados

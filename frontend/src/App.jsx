@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import GestionUsuarios from './pages/GestionUsuarios';
 import Layout from './components/Layout'; // <-- Importamos tu nuevo caparazón
 import GestionInventario from './pages/GestionInventario';
+import HistorialMedico from './pages/HistorialMedico';
 
 // Componente para proteger rutas Y envolverlas en el Layout
 const RutaProtegida = ({ children }) => {
@@ -64,6 +65,15 @@ function App() {
                     element={
                         <RutaProtegida>
                             <GestionUsuarios />
+                        </RutaProtegida>
+                    } 
+                />
+
+                <Route 
+                    path="/historial" 
+                    element={
+                        <RutaProtegida>
+                            <HistorialMedico />
                         </RutaProtegida>
                     } 
                 />
