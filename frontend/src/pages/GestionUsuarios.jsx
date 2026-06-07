@@ -1,17 +1,19 @@
 import { useState, useEffect, useContext } from 'react';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
-import { Users, ShieldAlert, Plus, Edit2, X, ArchiveX, CheckCircle } from 'lucide-react';
+import { Users, ShieldAlert, Plus, Edit2, X, ArchiveX, CheckCircle, Search, Filter } from 'lucide-react';
 
 const GestionUsuarios = () => {
     const { usuario } = useContext(AuthContext);
     const [usuariosLista, setUsuariosLista] = useState([]);
     const [error, setError] = useState('');
     
+    // Estados para búsqueda y filtros
+    const [busqueda, setBusqueda] = useState('');
+    const [filtroEstado, setFiltroEstado] = useState('activo'); // Por defecto, mostramos solo los activos
+    
     const [mostrarModal, setMostrarModal] = useState(false);
     const [modoEdicion, setModoEdicion] = useState(false);
-    
-    // Estado para la alerta bonita de confirmación
     const [confirmacion, setConfirmacion] = useState({ mostrar: false, id: null, estadoActual: null });
 
     const [formData, setFormData] = useState({
@@ -19,7 +21,7 @@ const GestionUsuarios = () => {
         nombreCompleto: '',
         email: '',
         password: '',
-        rolId: '3' // Por defecto Recepcionista para evitar dar admin por error
+        rolId: '3'
     });
 
     useEffect(() => {
@@ -35,7 +37,36 @@ const GestionUsuarios = () => {
         }
     };
 
-    // Funciones del Modal Bonito de Confirmación
+    // Función auxiliar para obtener el nombre del rol (usada en la tabla y en la búsqueda)
+    const getNombreRol = (rolId) => {
+        switch(rolId) {
+            case 1: return 'Administrador';
+            case 2: return 'Veterinario';
+            case 3: return 'Recepcionista';
+            default: return 'Desconocido';
+        }
+    };
+
+    // ========================================================
+    // LÓGICA DE FILTRADO Y BÚSQUEDA (SE EJECUTA EN TIEMPO REAL)
+    // ========================================================
+    const usuariosFiltrados = usuariosLista.filter((user) => {
+        // 1. Filtrar por Estado
+        const cumpleEstado = 
+            filtroEstado === 'todos' ? true :
+            filtroEstado === 'activo' ? user.Estado === true :
+            filtroEstado === 'inactivo' ? user.Estado === false : true;
+
+        // 2. Filtrar por Búsqueda (Nombre o Puesto)
+        const termino = busqueda.toLowerCase();
+        const cumpleBusqueda = 
+            user.NombreCompleto.toLowerCase().includes(termino) ||
+            getNombreRol(user.RolId).toLowerCase().includes(termino);
+
+        // El usuario debe cumplir ambas condiciones para aparecer en la tabla
+        return cumpleEstado && cumpleBusqueda;
+    });
+
     const pedirConfirmacion = (id, estadoActual) => {
         setConfirmacion({ mostrar: true, id, estadoActual });
     };
@@ -65,7 +96,7 @@ const GestionUsuarios = () => {
             id: user.UsuarioId,
             nombreCompleto: user.NombreCompleto,
             email: user.Email,
-            password: '', // Se deja vacío por seguridad, el backend debe ignorarlo si viene vacío
+            password: '',
             rolId: user.RolId.toString()
         });
         setMostrarModal(true);
@@ -80,7 +111,6 @@ const GestionUsuarios = () => {
                 rolId: parseInt(formData.rolId)
             };
 
-            // Solo enviamos el password si el usuario escribió uno nuevo (o si es creación)
             if (formData.password) {
                 payload.password = formData.password;
             }
@@ -101,15 +131,6 @@ const GestionUsuarios = () => {
         }
     };
 
-    const getNombreRol = (rolId) => {
-        switch(rolId) {
-            case 1: return 'Administrador';
-            case 2: return 'Veterinario';
-            case 3: return 'Recepcionista';
-            default: return 'Desconocido';
-        }
-    };
-
     return (
         <div className="max-w-7xl mx-auto p-6 lg:p-8 bg-gray-50 min-h-screen relative">
             
@@ -121,7 +142,6 @@ const GestionUsuarios = () => {
                     </h1>
                     <p className="text-gray-500 mt-1">Administración del personal de la clínica (M1).</p>
                 </div>
-                {/* Solo el admin debería ver esta pantalla según RF-03, pero mantenemos la validación por seguridad */}
                 {usuario?.rolId === 1 && (
                     <button 
                         onClick={abrirModalCrear}
@@ -140,6 +160,37 @@ const GestionUsuarios = () => {
                 </div>
             )}
 
+            {/* BARRA DE BÚSQUEDA Y FILTROS */}
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex flex-col sm:flex-row gap-4">
+                {/* Buscador de texto */}
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                    <input
+                        type="text"
+                        placeholder="Buscar por nombre o puesto (ej. Veterinario)..."
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
+                    />
+                </div>
+                
+                {/* Filtro desplegable de estado */}
+                <div className="flex items-center gap-2">
+                    <div className="bg-blue-50 p-2 rounded-lg border border-blue-100">
+                        <Filter className="text-blue-600" size={20} />
+                    </div>
+                    <select
+                        className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-700 font-medium cursor-pointer"
+                        value={filtroEstado}
+                        onChange={(e) => setFiltroEstado(e.target.value)}
+                    >
+                        <option value="activo">Solo Activos</option>
+                        <option value="inactivo">Solo Inactivos</option>
+                        <option value="todos">Todos los Usuarios</option>
+                    </select>
+                </div>
+            </div>
+
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
@@ -152,74 +203,80 @@ const GestionUsuarios = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {usuariosLista.map((user) => (
-                                <tr key={user.UsuarioId} className="hover:bg-gray-50/50 transition-colors">
-                                    <td className="py-4 px-6">
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-gray-900">{user.NombreCompleto}</span>
-                                            <span className="text-xs text-gray-500">{user.Email}</span>
-                                        </div>
+                            {/* AQUÍ ESTÁ EL CAMBIO: Usamos usuariosFiltrados en lugar de usuariosLista */}
+                            {usuariosFiltrados.length === 0 ? (
+                                <tr>
+                                    <td colSpan="4" className="py-8 text-center text-gray-500">
+                                        No se encontraron usuarios que coincidan con la búsqueda.
                                     </td>
-                                    <td className="py-4 px-6">
-                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                                            user.RolId === 1 ? 'bg-purple-100 text-purple-800' :
-                                            user.RolId === 2 ? 'bg-blue-100 text-blue-800' :
-                                            'bg-orange-100 text-orange-800'
-                                        }`}>
-                                            {getNombreRol(user.RolId)}
-                                        </span>
-                                    </td>
-                                    <td className="py-4 px-6">
-                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                                            user.Estado ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-800'
-                                        }`}>
-                                            {user.Estado ? '● Activo' : '○ Inactivo'}
-                                        </span>
-                                    </td>
-                                    
-                                    {usuario?.rolId === 1 && (
-                                        <td className="py-4 px-6 text-right">
-                                            <div className="flex justify-end gap-2">
-                                                
-                                                {/* Botón de Editar con lógica de bloqueo */}
-                                                <button 
-                                                    onClick={() => abrirModalEditar(user)}
-                                                    disabled={!user.Estado}
-                                                    className={`p-2 border rounded-lg transition-all ${
-                                                        user.Estado 
-                                                            ? 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50' 
-                                                            : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60'
-                                                    }`}
-                                                    title={user.Estado ? "Editar Usuario" : "Reactivar para editar"}
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
-
-                                                {/* No permitir que el usuario logueado se desactive a sí mismo por error */}
-                                                {usuario.id !== user.UsuarioId && (
-                                                    user.Estado === true ? (
-                                                        <button 
-                                                            onClick={() => pedirConfirmacion(user.UsuarioId, user.Estado)}
-                                                            className="p-2 bg-white border border-gray-300 rounded-lg text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
-                                                            title="Desactivar Usuario"
-                                                        >
-                                                            <ArchiveX size={16} />
-                                                        </button>
-                                                    ) : (
-                                                        <button 
-                                                            onClick={() => pedirConfirmacion(user.UsuarioId, user.Estado)}
-                                                            className="p-2 bg-white border border-gray-300 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 transition-all"
-                                                            title="Reactivar Usuario"
-                                                        >
-                                                            <CheckCircle size={16} />
-                                                        </button>
-                                                    )
-                                                )}
+                                </tr>
+                            ) : (
+                                usuariosFiltrados.map((user) => (
+                                    <tr key={user.UsuarioId} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="py-4 px-6">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-gray-900">{user.NombreCompleto}</span>
+                                                <span className="text-xs text-gray-500">{user.Email}</span>
                                             </div>
                                         </td>
-                                    )}
-                                </tr>
-                            ))}
+                                        <td className="py-4 px-6">
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                                                user.RolId === 1 ? 'bg-purple-100 text-purple-800' :
+                                                user.RolId === 2 ? 'bg-blue-100 text-blue-800' :
+                                                'bg-orange-100 text-orange-800'
+                                            }`}>
+                                                {getNombreRol(user.RolId)}
+                                            </span>
+                                        </td>
+                                        <td className="py-4 px-6">
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                                                user.Estado ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-800'
+                                            }`}>
+                                                {user.Estado ? '● Activo' : '○ Inactivo'}
+                                            </span>
+                                        </td>
+                                        
+                                        {usuario?.rolId === 1 && (
+                                            <td className="py-4 px-6 text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <button 
+                                                        onClick={() => abrirModalEditar(user)}
+                                                        disabled={!user.Estado}
+                                                        className={`p-2 border rounded-lg transition-all ${
+                                                            user.Estado 
+                                                                ? 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50' 
+                                                                : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60'
+                                                        }`}
+                                                        title={user.Estado ? "Editar Usuario" : "Reactivar para editar"}
+                                                    >
+                                                        <Edit2 size={16} />
+                                                    </button>
+
+                                                    {usuario.id !== user.UsuarioId && (
+                                                        user.Estado === true ? (
+                                                            <button 
+                                                                onClick={() => pedirConfirmacion(user.UsuarioId, user.Estado)}
+                                                                className="p-2 bg-white border border-gray-300 rounded-lg text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
+                                                                title="Desactivar Usuario"
+                                                            >
+                                                                <ArchiveX size={16} />
+                                                            </button>
+                                                        ) : (
+                                                            <button 
+                                                                onClick={() => pedirConfirmacion(user.UsuarioId, user.Estado)}
+                                                                className="p-2 bg-white border border-gray-300 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 transition-all"
+                                                                title="Reactivar Usuario"
+                                                            >
+                                                                <CheckCircle size={16} />
+                                                            </button>
+                                                        )
+                                                    )}
+                                                </div>
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
