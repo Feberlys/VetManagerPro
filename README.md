@@ -50,3 +50,102 @@ git checkout main
 git pull origin main
 git checkout modulo-tunombre
 \`\`\`
+
+
+
+# M6 - Módulo de Guardería
+
+## Integrante
+
+* Albert García
+
+## Requisitos Funcionales Implementados
+
+### RF-22 - Gestión de espacios
+
+* Registro de espacios disponibles del hotel.
+* Datos registrados:
+
+  * Número de espacio.
+  * Tipo (Pequeño, Mediano, Grande).
+  * Precio por noche.
+* Acceso exclusivo para Administradores.
+
+### RF-23 - Check-in de mascotas
+
+* Registro de hospedaje de mascotas.
+* Selección de espacio disponible.
+* Registro de fecha de entrada.
+* Registro de fecha estimada de salida.
+* Registro de notas especiales:
+
+  * Dieta.
+  * Medicación.
+  * Alergias.
+  * Observaciones.
+
+### RF-24 - Check-out de mascotas
+
+* Registro de salida de la mascota.
+* Cálculo automático del total a pagar según las noches de hospedaje.
+* Liberación automática del espacio ocupado.
+
+### RF-25 - Consulta de ocupación
+
+* Visualización de espacios ocupados.
+* Información mostrada:
+
+  * Mascota hospedada.
+  * Cliente propietario.
+  * Espacio asignado.
+  * Fecha de entrada.
+  * Fecha estimada de salida.
+  * Notas especiales.
+
+### RF-26 - Notificación por correo electrónico
+
+* Envío automático de correo al propietario al realizar el check-out.
+* El correo informa que la mascota está lista para ser recogida.
+* Incluye el monto total a pagar.
+
+## Roles involucrados
+
+### Administrador
+
+* Registrar espacios.
+* Consultar ocupación.
+* Realizar check-in.
+* Realizar check-out.
+
+### Recepcionista
+
+* Consultar ocupación.
+* Realizar check-in.
+* Realizar check-out.
+* No puede registrar espacios.
+
+## Dependencias agregadas
+
+Backend:
+
+```bash
+npm install nodemailer
+```
+
+## Variables de entorno requeridas
+
+```env
+EMAIL_USER=correo@gmail.com
+EMAIL_PASS=contraseña_de_aplicacion
+```
+
+## Base de datos utilizada
+
+Tablas:
+
+* EspaciosHotel
+* Hospedajes
+
+## Estado del módulo
+
+M6 Guardería completado y funcional.
