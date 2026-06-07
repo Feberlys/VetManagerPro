@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import {
     Stethoscope, Search, Plus, X, ClipboardList, Syringe,
     Package, AlertTriangle, Calendar, User, Pill, PawPrint,
-    Activity, ShieldCheck, Clock, FileText
+    Activity, ShieldCheck, Clock, FileText, CalendarCheck
 } from 'lucide-react';
 
 const HistorialMedico = () => {
@@ -17,26 +17,26 @@ const HistorialMedico = () => {
 
     // Datos
     const [historial, setHistorial] = useState([]);
-    const [vacunas, setVacunas] = useState([]);
+    const [vacunas, setVacunas]     = useState([]);
     const [productos, setProductos] = useState([]);
 
     // UI
     const [tabActiva, setTabActiva] = useState('consultas');
-    const [cargando, setCargando] = useState(false);
-    const [error, setError] = useState('');
+    const [cargando, setCargando]   = useState(false);
+    const [error, setError]         = useState('');
 
     // Modal consulta
-    const [modalConsulta, setModalConsulta] = useState(false);
-    const [formConsulta, setFormConsulta] = useState({
+    const [modalConsulta, setModalConsulta]         = useState(false);
+    const [formConsulta, setFormConsulta]            = useState({
         diagnostico: '', tratamiento: '', notasAdicionales: '', citaId: ''
     });
-    const [productosAgregados, setProductosAgregados] = useState([]);
+    const [productosAgregados, setProductosAgregados]     = useState([]);
     const [productoSeleccionado, setProductoSeleccionado] = useState('');
-    const [cantidadProducto, setCantidadProducto] = useState(1);
+    const [cantidadProducto, setCantidadProducto]         = useState(1);
 
     // Modal vacuna
     const [modalVacuna, setModalVacuna] = useState(false);
-    const [formVacuna, setFormVacuna] = useState({
+    const [formVacuna, setFormVacuna]   = useState({
         nombreVacuna: '', fechaAplicacion: '', fechaProximaDosis: '', productoId: ''
     });
 
@@ -95,6 +95,13 @@ const HistorialMedico = () => {
         setProductosAgregados(productosAgregados.filter(p => p.productoId !== productoId));
     };
 
+    // Abre el modal de consulta, opcionalmente pre-cargando un CitaId
+    const abrirModalConsulta = (citaId = '') => {
+        setFormConsulta({ diagnostico: '', tratamiento: '', notasAdicionales: '', citaId: citaId ? String(citaId) : '' });
+        setProductosAgregados([]);
+        setModalConsulta(true);
+    };
+
     const guardarConsulta = async (e) => {
         e.preventDefault();
         try {
@@ -144,29 +151,34 @@ const HistorialMedico = () => {
         });
     };
 
-    // Estado de una vacuna según su próxima dosis
+    const formatFechaHora = (fechaStr) => {
+        if (!fechaStr) return '—';
+        return new Date(fechaStr).toLocaleString('es-DO', {
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
+    };
+
     const getVacunaStatus = (fechaProximaDosis) => {
         if (!fechaProximaDosis) return { label: 'Dosis única', classes: 'bg-gray-100 text-gray-500', dot: 'bg-gray-400' };
         const hoy = new Date();
         const proxima = new Date(fechaProximaDosis);
         const dias = Math.ceil((proxima - hoy) / (1000 * 60 * 60 * 24));
-        if (dias < 0) return { label: 'Vencida', classes: 'bg-red-50 text-red-600', dot: 'bg-red-500' };
+        if (dias < 0)   return { label: 'Vencida',           classes: 'bg-red-50 text-red-600',     dot: 'bg-red-500' };
         if (dias <= 30) return { label: `Vence en ${dias}d`, classes: 'bg-amber-50 text-amber-600', dot: 'bg-amber-500' };
-        return { label: 'Al día', classes: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500' };
+        return           { label: 'Al día',                  classes: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500' };
     };
 
-    // Próxima vacuna pendiente (la fecha más cercana en el futuro)
     const proximaVacuna = vacunas
         .filter(v => v.FechaProximaDosis && new Date(v.FechaProximaDosis) >= new Date())
         .sort((a, b) => new Date(a.FechaProximaDosis) - new Date(b.FechaProximaDosis))[0];
 
     return (
         <div className="space-y-6">
-            {/* Animaciones locales */}
             <style>{`
                 @keyframes fadeInUp {
                     from { opacity: 0; transform: translateY(14px); }
-                    to { opacity: 1; transform: translateY(0); }
+                    to   { opacity: 1; transform: translateY(0); }
                 }
                 .anim-in { animation: fadeInUp 0.45s ease-out both; }
             `}</style>
@@ -277,7 +289,7 @@ const HistorialMedico = () => {
 
                             {esVeterinario && (
                                 <button
-                                    onClick={() => tabActiva === 'consultas' ? setModalConsulta(true) : setModalVacuna(true)}
+                                    onClick={() => tabActiva === 'consultas' ? abrirModalConsulta() : setModalVacuna(true)}
                                     className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors mb-2 shadow-sm"
                                 >
                                     <Plus size={16} />
@@ -296,64 +308,116 @@ const HistorialMedico = () => {
                                     </div>
                                 ) : (
                                     <div className="relative pl-8">
-                                        {/* Línea vertical */}
                                         <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-gradient-to-b from-emerald-300 via-emerald-200 to-transparent" />
 
                                         <div className="space-y-5">
-                                            {historial.map((consulta, i) => (
-                                                <div key={consulta.HistorialId} className="anim-in relative" style={{ animationDelay: `${i * 70}ms` }}>
-                                                    {/* Punto */}
-                                                    <div className="absolute -left-8 top-1.5 w-6 h-6 rounded-full bg-white border-2 border-emerald-500 flex items-center justify-center">
-                                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                                    </div>
-
-                                                    <div className="border border-gray-100 rounded-xl p-4 hover:border-emerald-200 hover:shadow-sm transition-all bg-white">
-                                                        <div className="flex items-start justify-between gap-3 mb-2">
-                                                            <p className="font-semibold text-gray-800">{consulta.Diagnostico}</p>
-                                                            <span className="text-xs text-gray-400 whitespace-nowrap flex items-center gap-1">
-                                                                <Calendar size={11} /> {formatFecha(consulta.FechaConsulta)}
-                                                            </span>
+                                            {historial.map((consulta, i) => {
+                                                const esCitaAtendida = consulta.TipoRegistro === 'cita_atendida';
+                                                return (
+                                                    <div key={consulta.HistorialId ?? `cita-${consulta.CitaId}`} className="anim-in relative" style={{ animationDelay: `${i * 70}ms` }}>
+                                                        {/* Punto en la línea */}
+                                                        <div className={`absolute -left-8 top-1.5 w-6 h-6 rounded-full bg-white flex items-center justify-center border-2 ${esCitaAtendida ? 'border-blue-400' : 'border-emerald-500'}`}>
+                                                            <div className={`w-2 h-2 rounded-full ${esCitaAtendida ? 'bg-blue-400' : 'bg-emerald-500'}`} />
                                                         </div>
 
-                                                        <p className="text-xs text-gray-400 flex items-center gap-1 mb-3">
-                                                            <User size={11} /> {consulta.NombreVeterinario}
-                                                        </p>
-
-                                                        {consulta.Tratamiento && (
-                                                            <div className="flex gap-2 mb-1.5 text-sm">
-                                                                <FileText size={14} className="text-gray-300 flex-shrink-0 mt-0.5" />
-                                                                <p className="text-gray-600">
-                                                                    <span className="font-medium text-gray-700">Tratamiento: </span>
-                                                                    {consulta.Tratamiento}
-                                                                </p>
+                                                        <div className={`border rounded-xl p-4 transition-all bg-white ${esCitaAtendida ? 'border-blue-100 hover:border-blue-200 hover:shadow-sm' : 'border-gray-100 hover:border-emerald-200 hover:shadow-sm'}`}>
+                                                            <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                    <p className="font-semibold text-gray-800">
+                                                                        {esCitaAtendida ? consulta.MotivoCita : consulta.Diagnostico}
+                                                                    </p>
+                                                                    {/* Badge que distingue el tipo */}
+                                                                    {esCitaAtendida ? (
+                                                                        <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full text-xs font-medium">
+                                                                            <CalendarCheck size={11} /> Cita atendida · pendiente diagnóstico
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                                                                            <Stethoscope size={11} /> Consulta
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <span className="text-xs text-gray-400 whitespace-nowrap flex items-center gap-1">
+                                                                    <Calendar size={11} /> {formatFecha(consulta.FechaConsulta)}
+                                                                </span>
                                                             </div>
-                                                        )}
 
-                                                        {consulta.NotasAdicionales && (
-                                                            <div className="flex gap-2 mb-1.5 text-sm">
-                                                                <FileText size={14} className="text-gray-300 flex-shrink-0 mt-0.5" />
-                                                                <p className="text-gray-500">
-                                                                    <span className="font-medium text-gray-600">Notas: </span>
-                                                                    {consulta.NotasAdicionales}
-                                                                </p>
-                                                            </div>
-                                                        )}
+                                                            {/* Veterinario */}
+                                                            <p className="text-xs text-gray-400 flex items-center gap-1 mb-3">
+                                                                <User size={11} /> {consulta.NombreVeterinario}
+                                                            </p>
 
-                                                        {/* Productos usados (la liga con inventario) */}
-                                                        {consulta.productosUsados && consulta.productosUsados.length > 0 && (
-                                                            <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-gray-50">
-                                                                {consulta.productosUsados.map(prod => (
-                                                                    <span key={prod.ProductoId} className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-medium">
-                                                                        <Pill size={11} />
-                                                                        {prod.NombreProducto}
-                                                                        <span className="text-emerald-500">x{prod.Cantidad}</span>
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        )}
+                                                            {/* Motivo original de la cita (cuando viene de M3) */}
+                                                            {!esCitaAtendida && consulta.MotivoCita && (
+                                                                <div className="flex gap-2 mb-1.5 text-sm">
+                                                                    <CalendarCheck size={14} className="text-blue-300 flex-shrink-0 mt-0.5" />
+                                                                    <p className="text-gray-500">
+                                                                        <span className="font-medium text-gray-600">Motivo de cita: </span>
+                                                                        {consulta.MotivoCita}
+                                                                        {consulta.FechaCitaOriginal && (
+                                                                            <span className="text-gray-400 ml-1">· {formatFechaHora(consulta.FechaCitaOriginal)}</span>
+                                                                        )}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Diagnóstico (solo para registros de historial) */}
+                                                            {!esCitaAtendida && consulta.Diagnostico && (
+                                                                <div className="flex gap-2 mb-1.5 text-sm">
+                                                                    <Stethoscope size={14} className="text-gray-300 flex-shrink-0 mt-0.5" />
+                                                                    <p className="text-gray-600">
+                                                                        <span className="font-medium text-gray-700">Diagnóstico: </span>
+                                                                        {consulta.Diagnostico}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+
+                                                            {consulta.Tratamiento && (
+                                                                <div className="flex gap-2 mb-1.5 text-sm">
+                                                                    <FileText size={14} className="text-gray-300 flex-shrink-0 mt-0.5" />
+                                                                    <p className="text-gray-600">
+                                                                        <span className="font-medium text-gray-700">Tratamiento: </span>
+                                                                        {consulta.Tratamiento}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+
+                                                            {consulta.NotasAdicionales && (
+                                                                <div className="flex gap-2 mb-1.5 text-sm">
+                                                                    <FileText size={14} className="text-gray-300 flex-shrink-0 mt-0.5" />
+                                                                    <p className="text-gray-500">
+                                                                        <span className="font-medium text-gray-600">Notas: </span>
+                                                                        {consulta.NotasAdicionales}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Botón "Completar diagnóstico" para citas atendidas (solo veterinario) */}
+                                                            {esCitaAtendida && esVeterinario && (
+                                                                <button
+                                                                    onClick={() => abrirModalConsulta(consulta.CitaId)}
+                                                                    className="mt-3 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                                                                >
+                                                                    <Plus size={13} /> Completar diagnóstico
+                                                                </button>
+                                                            )}
+
+                                                            {/* Productos usados */}
+                                                            {consulta.productosUsados && consulta.productosUsados.length > 0 && (
+                                                                <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-gray-50">
+                                                                    {consulta.productosUsados.map(prod => (
+                                                                        <span key={prod.ProductoId} className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-medium">
+                                                                            <Pill size={11} />
+                                                                            {prod.NombreProducto}
+                                                                            <span className="text-emerald-500">x{prod.Cantidad}</span>
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )
@@ -426,7 +490,9 @@ const HistorialMedico = () => {
                                 <div className="w-9 h-9 bg-emerald-100 rounded-lg flex items-center justify-center">
                                     <Stethoscope size={17} className="text-emerald-600" />
                                 </div>
-                                <h2 className="text-lg font-bold text-gray-800">Nueva Consulta · Mascota #{mascotaId}</h2>
+                                <h2 className="text-lg font-bold text-gray-800">
+                                    {formConsulta.citaId ? `Completar diagnóstico · Cita #${formConsulta.citaId}` : `Nueva Consulta · Mascota #${mascotaId}`}
+                                </h2>
                             </div>
                             <button onClick={() => setModalConsulta(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                                 <X size={20} />
@@ -434,6 +500,14 @@ const HistorialMedico = () => {
                         </div>
 
                         <form onSubmit={guardarConsulta} className="p-6 space-y-4">
+                            {/* Mostrar CitaId si viene pre-cargado */}
+                            {formConsulta.citaId && (
+                                <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-2.5 flex items-center gap-2 text-sm text-blue-700">
+                                    <CalendarCheck size={14} />
+                                    Esta consulta quedará vinculada a la Cita #{formConsulta.citaId}
+                                </div>
+                            )}
+
                             <div>
                                 <label className="text-sm font-medium text-gray-700 block mb-1">Diagnóstico *</label>
                                 <textarea
