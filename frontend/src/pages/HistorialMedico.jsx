@@ -1,3 +1,6 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+
+
 import { useState, useEffect, useContext } from 'react';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
@@ -40,8 +43,7 @@ const HistorialMedico = () => {
         nombreVacuna: '', fechaAplicacion: '', fechaProximaDosis: '', productoId: ''
     });
 
-    useEffect(() => { cargarProductos(); }, []);
-
+   
     const cargarProductos = async () => {
         try {
             const res = await api.get('/productos');
@@ -50,6 +52,9 @@ const HistorialMedico = () => {
             console.error('Error cargando productos:', err);
         }
     };
+
+     useEffect(() => { cargarProductos(); }, []);
+
 
     const buscarHistorial = async () => {
         if (!mascotaId) return;
@@ -63,7 +68,7 @@ const HistorialMedico = () => {
             setHistorial(resHistorial.data);
             setVacunas(resVacunas.data);
             setMascotaBuscada(mascotaId);
-        } catch (err) {
+        } catch {
             setError('No se encontró historial para esa mascota o ocurrió un error.');
             setHistorial([]);
             setVacunas([]);

@@ -41,15 +41,38 @@ const obtenerUsuarios = async () => {
 
 const actualizarUsuario = async (id, datos) => {
     const pool = await getConnection();
-    const result = await pool.request()
+
+    let query = `
+        UPDATE Usuarios 
+        SET 
+            NombreUsuario = @nombreUsuario,
+            NombreCompleto = @nombreCompleto,
+            Correo = @correo,
+            RolId = @rolId
+    `;
+
+    if (datos.passwordHash) {
+        query += `,
+            PasswordHash = @passwordHash
+        `;
+    }
+
+    query += `
+        WHERE UsuarioId = @id
+    `;
+
+    const request = pool.request()
         .input('id', sql.Int, id)
+        .input('nombreUsuario', sql.NVarChar, datos.nombreUsuario)
         .input('nombreCompleto', sql.NVarChar, datos.nombreCompleto)
-        .input('rolId', sql.Int, datos.rolId)
-        .query(`
-            UPDATE Usuarios 
-            SET NombreCompleto = @nombreCompleto, RolId = @rolId
-            WHERE UsuarioId = @id
-        `);
+        .input('correo', sql.NVarChar, datos.correo)
+        .input('rolId', sql.Int, datos.rolId);
+
+    if (datos.passwordHash) {
+        request.input('passwordHash', sql.NVarChar, datos.passwordHash);
+    }
+
+    const result = await request.query(query);
     return result.rowsAffected[0] > 0;
 };
 
@@ -66,11 +89,24 @@ const cambiarEstadoUsuario = async (id, estado) => {
     return result.rowsAffected[0] > 0;
 };
 
+const obtenerVeterinarios = async () => {
+    const pool = await getConnection();
+    const result = await pool.request()
+        .query(`
+            SELECT UsuarioId, NombreUsuario, NombreCompleto, Correo, RolId, Estado
+            FROM Usuarios
+            WHERE RolId = 2 AND Estado = 1
+        `);
+
+    return result.recordset;
+};
+
 // No olvides exportar las nuevas funciones
 module.exports = { 
     buscarUsuarioPorCorreo, 
     crearUsuario, 
     obtenerUsuarios, 
     actualizarUsuario, 
-    cambiarEstadoUsuario 
+    cambiarEstadoUsuario, 
+    obtenerVeterinarios
 };

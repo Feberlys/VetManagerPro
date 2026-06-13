@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { useState, useEffect, useContext } from 'react';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
@@ -18,24 +20,27 @@ const GestionUsuarios = () => {
 
     const [formData, setFormData] = useState({
         id: null,
+        nombreUsuario: '',
         nombreCompleto: '',
         email: '',
         password: '',
         rolId: '3'
     });
 
-    useEffect(() => {
-        cargarUsuarios();
-    }, []);
 
     const cargarUsuarios = async () => {
         try {
             const response = await api.get('/usuarios');
             setUsuariosLista(response.data);
-        } catch (err) {
+        } catch {
             setError('Error al cargar la lista de usuarios');
         }
     };
+
+        useEffect(() => {
+        cargarUsuarios();
+    }, []);
+
 
     // Función auxiliar para obtener el nombre del rol (usada en la tabla y en la búsqueda)
     const getNombreRol = (rolId) => {
@@ -79,7 +84,7 @@ const GestionUsuarios = () => {
             await api.patch(`/usuarios/${id}/${accion}`);
             setConfirmacion({ mostrar: false, id: null, estadoActual: null });
             cargarUsuarios();
-        } catch (err) {
+        } catch {
             alert(`Error al ${accion} el usuario`);
         }
     };
@@ -93,27 +98,29 @@ const GestionUsuarios = () => {
     const abrirModalEditar = (user) => {
         setModoEdicion(true);
         setFormData({
-            id: user.UsuarioId,
-            nombreCompleto: user.NombreCompleto,
-            email: user.Email,
-            password: '',
-            rolId: user.RolId.toString()
-        });
-        setMostrarModal(true);
+         id: user.UsuarioId,
+         nombreUsuario: user.NombreUsuario || '',
+         nombreCompleto: user.NombreCompleto || '',
+         email: user.Correo || '',
+         password: '',
+         rolId: user.RolId.toString()
+  });
+     setMostrarModal(true);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const payload = {
-                nombreCompleto: formData.nombreCompleto,
-                email: formData.email,
-                rolId: parseInt(formData.rolId)
-            };
+    const payload = {
+        nombreUsuario: formData.nombreUsuario,
+        nombreCompleto: formData.nombreCompleto,
+        correo: formData.email,
+        rolId: parseInt(formData.rolId)
+     };
 
-            if (formData.password) {
-                payload.password = formData.password;
-            }
+       if (formData.password) {
+        payload.password = formData.password;
+    }
 
             if (modoEdicion) {
                 await api.put(`/usuarios/${formData.id}`, payload);
@@ -297,6 +304,17 @@ const GestionUsuarios = () => {
                         
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div>
+                                <div>
+                                 <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre de Usuario</label>
+                                 <input
+                                    type="text"
+                                    required
+                                    value={formData.nombreUsuario}
+                                    onChange={(e) => setFormData({ ...formData, nombreUsuario: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="doctor1"
+                                />
+                                </div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre Completo</label>
                                 <input type="text" required value={formData.nombreCompleto} onChange={(e) => setFormData({...formData, nombreCompleto: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
                             </div>
