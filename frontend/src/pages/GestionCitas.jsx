@@ -17,6 +17,16 @@ const GestionCitas = () => {
   const [error, setError] = useState('');
   const [mostrarModal, setMostrarModal] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
+  const [productos, setProductos] = useState([]);
+  const [mostrarModalVacuna, setMostrarModalVacuna] = useState(false);
+  const [citaVacuna, setCitaVacuna] = useState(null);
+
+  const [vacunaData, setVacunaData] = useState({
+  nombreVacuna: '',
+  fechaAplicacion: '',
+  fechaProximaDosis: '',
+  productoId: ''
+});
 
   const [formData, setFormData] = useState({
     id: null,
@@ -27,23 +37,28 @@ const GestionCitas = () => {
     estadoCitaId: 1
   });
 
-  const cargarDatos = async () => {
+const cargarDatos = async () => {
+  try {
+    const [citasRes, mascotasRes, productosRes] = await Promise.all([
+      api.get('/citas'),
+      api.get('/mascotas'),
+      api.get('/productos'),
+    ]);
+
+    setCitas(citasRes.data);
+    setMascotas(mascotasRes.data);
+    setProductos(productosRes.data);
+
     try {
-      const [citasRes, mascotasRes, usuariosRes] = await Promise.all([
-        api.get('/citas'),
-        api.get('/mascotas'),
-        api.get('/usuarios')
-      ]);
-
-      setCitas(citasRes.data);
-      setMascotas(mascotasRes.data);
-
-      const vets = usuariosRes.data.filter((u) => Number(u.RolId) === 2 || Number(u.rolId) === 2);
-      setVeterinarios(vets);
+      const usuariosRes = await api.get('/usuarios/veterinarios');
+      setVeterinarios(usuariosRes.data);
     } catch {
-      setError('Error al cargar la información de citas');
+      setVeterinarios([]);
     }
-  };
+  } catch {
+    setError('Error al cargar la información de citas');
+  }
+};
 
   useEffect(() => {
     cargarDatos();
@@ -163,6 +178,55 @@ const GestionCitas = () => {
   setFiltroMes('');
   setFiltroAnio('');
   setFiltroSemana('');
+};
+
+const abrirModalVacuna = (cita) => {
+  setCitaVacuna(cita);
+  setVacunaData({
+    nombreVacuna: '',
+    fechaAplicacion: new Date().toISOString().substring(0, 10),
+    fechaProximaDosis: '',
+    productoId: ''
+  });
+  setMostrarModalVacuna(true);
+};
+
+const atenderSinVacuna = async () => {
+  if (!citaVacuna) return;
+
+  try {
+    await api.patch(`/citas/${citaVacuna.CitaId}/estado`, { estadoCitaId: 2 });
+
+    setMostrarModalVacuna(false);
+    setCitaVacuna(null);
+    cargarDatos();
+  } catch (err) {
+    alert(err.response?.data?.error || 'Error al marcar la cita como atendida');
+  }
+};
+
+  const registrarVacunaYAtender = async (e) => {
+  e.preventDefault();
+
+  if (!citaVacuna) return;
+
+  try {
+    await api.post('/vacunas', {
+      mascotaId: citaVacuna.MascotaId,
+      nombreVacuna: vacunaData.nombreVacuna,
+      fechaAplicacion: vacunaData.fechaAplicacion,
+      fechaProximaDosis: vacunaData.fechaProximaDosis || null,
+      productoId: vacunaData.productoId ? Number(vacunaData.productoId) : null
+    });
+
+    await api.patch(`/citas/${citaVacuna.CitaId}/estado`, { estadoCitaId: 2 });
+
+    setMostrarModalVacuna(false);
+    setCitaVacuna(null);
+    cargarDatos();
+  } catch (err) {
+    alert(err.response?.data?.error || 'Error al registrar vacuna y atender la cita');
+  }
 };
 
   const handleSubmit = async (e) => {
@@ -371,7 +435,7 @@ const GestionCitas = () => {
                       {Number(cita.EstadoCitaId) === 1 && (
                         <>
                           <button
-                            onClick={() => cambiarEstadoCita(cita.CitaId, 2)}
+                            onClick={() => abrirModalVacuna(cita)}
                             className="p-2 bg-white border border-gray-300 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 transition-all"
                             title="Marcar como Atendida"
                           >
@@ -496,6 +560,110 @@ const GestionCitas = () => {
           </div>
         </div>
       )}
+      {mostrarModalVacuna && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+      <div className="flex justify-between items-center p-6 border-b border-gray-100">
+        <h2 className="text-xl font-bold text-gray-800">Atender Cita</h2>
+        <button
+          onClick={() => setMostrarModalVacuna(false)}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          <X size={24} />
+        </button>
+      </div>
+
+      <form onSubmit={registrarVacunaYAtender} className="p-6 space-y-4">
+        <p className="text-sm text-gray-600">
+          Puedes registrar una vacuna aplicada antes de marcar la cita como atendida.
+        </p>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Nombre de la vacuna
+          </label>
+          <input
+            type="text"
+            value={vacunaData.nombreVacuna}
+            onChange={(e) => setVacunaData({ ...vacunaData, nombreVacuna: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
+            placeholder="Ej: Rabia, Parvovirus, Moquillo"
+          />
+        </div>
+
+        <div className="flex gap-4">
+          <div className="w-1/2">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Fecha aplicación
+            </label>
+            <input
+              type="date"
+              value={vacunaData.fechaAplicacion}
+              onChange={(e) => setVacunaData({ ...vacunaData, fechaAplicacion: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+
+          <div className="w-1/2">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Próxima dosis
+            </label>
+            <input
+              type="date"
+              value={vacunaData.fechaProximaDosis}
+              onChange={(e) => setVacunaData({ ...vacunaData, fechaProximaDosis: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Producto usado
+          </label>
+          <select
+            value={vacunaData.productoId}
+            onChange={(e) => setVacunaData({ ...vacunaData, productoId: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
+          >
+            <option value="">Sin producto asociado</option>
+            {productos.map((producto) => (
+              <option key={producto.ProductoId} value={producto.ProductoId}>
+                {producto.Nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="pt-4 flex flex-col sm:flex-row gap-3">
+          <button
+            type="button"
+            onClick={() => setMostrarModalVacuna(false)}
+            className="w-full py-2.5 px-4 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="button"
+            onClick={atenderSinVacuna}
+            className="w-full py-2.5 px-4 bg-yellow-500 text-white font-bold rounded-lg hover:bg-yellow-600 transition-colors"
+          >
+            Atender sin vacuna
+          </button>
+
+          <button
+            type="submit"
+            disabled={!vacunaData.nombreVacuna || !vacunaData.fechaAplicacion}
+            className="w-full py-2.5 px-4 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+          >
+            Registrar vacuna y atender
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
     </div>
   );
 };
