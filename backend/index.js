@@ -24,9 +24,21 @@ app.use('/api/usuarios', usuarioRoutes);
 const productoRoutes = require('./src/routes/productoRoutes');
 app.use('/api/productos', productoRoutes);
 
+<<<<<<< HEAD
 // Ruta de notificaciones por email - Módulo M5
 const notificacionRoutes = require('./src/routes/notificacionRoutes');
 app.use('/api/notificaciones', notificacionRoutes);
+=======
+// Rutas de M4 - Historial Médico (Eduardo)
+const historialRoutes = require('./src/routes/historialRoutes');
+app.use('/api/historial', historialRoutes);
+
+const vacunaRoutes = require('./src/routes/vacunaRoutes');
+app.use('/api/vacunas', vacunaRoutes);
+// Ruta de clientes
+const clienteRoutes = require('./src/routes/clienteRoutes');
+app.use('/api/clientes', clienteRoutes);
+>>>>>>> origin/main
 
 // Activar proceso automático de notificaciones - Módulo M5
 const { iniciarNotificacionesAutomaticas } = require('./src/jobs/notificacionJob');
