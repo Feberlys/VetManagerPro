@@ -24,7 +24,6 @@ app.use('/api/usuarios', usuarioRoutes);
 const productoRoutes = require('./src/routes/productoRoutes');
 app.use('/api/productos', productoRoutes);
 
-<<<<<<< HEAD
 // Ruta de notificaciones por email - Módulo M5
 const notificacionRoutes = require('./src/routes/notificacionRoutes');
 app.use('/api/notificaciones', notificacionRoutes);
@@ -32,29 +31,11 @@ app.use('/api/notificaciones', notificacionRoutes);
 // Activar proceso automático de notificaciones - Módulo M5
 const { iniciarNotificacionesAutomaticas } = require('./src/jobs/notificacionJob');
 iniciarNotificacionesAutomaticas();
-=======
-// Ruta de clientes
-const clienteRoutes = require('./src/routes/clienteRoutes');
-app.use('/api/clientes', clienteRoutes);
-
-// Ruta de mascotas
-const mascotaRoutes = require('./src/routes/mascotaRoutes');
-app.use('/api/mascotas', mascotaRoutes);
-
-// Ruta de citas
-const citaRoutes = require('./src/routes/citaRoutes');
-app.use('/api/citas', citaRoutes);
-
-// Ruta de guarderia
-const guarderiaRoutes = require('./src/routes/guarderiaRoutes');
-app.use('/api/guarderia', guarderiaRoutes);
->>>>>>> origin/main
 
 // Ruta de prueba
 app.get('/', (req, res) => {
     res.json({ mensaje: 'API de VetManager Pro funcionando 🚀' });
 });
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
