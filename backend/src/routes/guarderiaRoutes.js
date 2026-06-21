@@ -2,25 +2,24 @@ const express = require('express');
 const router = express.Router();
 
 const guarderiaController = require('../controllers/guarderiaController');
-const { verificarToken, esAdmin, esAdminORecepcionista } = require('../middlewares/authMiddleware');
+// Quitamos esAdminORecepcionista porque ahora todo el personal tiene acceso operativo
+const { verificarToken, esAdmin } = require('../middlewares/authMiddleware');
 
-// Ver espacios: Admin y Recepcionista
+// Ver espacios: Todo el personal autenticado
 router.get(
   '/espacios',
   verificarToken,
-  esAdminORecepcionista,
   guarderiaController.getEspaciosHotel
 );
 
-// Ver espacios disponibles: Admin y Recepcionista
+// Ver espacios disponibles: Todo el personal autenticado
 router.get(
   '/espacios/disponibles',
   verificarToken,
-  esAdminORecepcionista,
   guarderiaController.getEspaciosDisponibles
 );
 
-// Crear espacio: solo Admin
+// Crear espacio: solo Admin (Protegido)
 router.post(
   '/espacios',
   verificarToken,
@@ -28,7 +27,7 @@ router.post(
   guarderiaController.crearEspacioHotel
 );
 
-// Actualizar espacio: solo Admin
+// Actualizar espacio: solo Admin (Protegido)
 router.put(
   '/espacios/:id',
   verificarToken,
@@ -36,27 +35,24 @@ router.put(
   guarderiaController.actualizarEspacioHotel
 );
 
-// Check-in: Admin y Recepcionista
+// Check-in: Todo el personal autenticado
 router.post(
   '/checkin',
   verificarToken,
-  esAdminORecepcionista,
   guarderiaController.hacerCheckIn
 );
 
-// Check-out: Admin y Recepcionista
+// Check-out: Todo el personal autenticado
 router.put(
   '/checkout/:id',
   verificarToken,
-  esAdminORecepcionista,
   guarderiaController.hacerCheckOut
 );
 
-// Ocupación: Admin y Recepcionista
+// Ocupación: Todo el personal autenticado
 router.get(
   '/ocupacion',
   verificarToken,
-  esAdminORecepcionista,
   guarderiaController.getOcupacionHotel
 );
 

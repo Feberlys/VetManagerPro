@@ -11,15 +11,10 @@ const GestionInventario = () => {
     const [mostrarModal, setMostrarModal] = useState(false);
     const [modoEdicion, setModoEdicion] = useState(false);
     
-    // Nuevo estado para la alerta bonita
     const [confirmacion, setConfirmacion] = useState({ mostrar: false, id: null, estadoActual: null });
 
     const [formData, setFormData] = useState({
-        id: null,
-        nombre: '',
-        descripcion: '',
-        cantidadActual: '',
-        nivelMinimo: ''
+        id: null, nombre: '', descripcion: '', cantidadActual: '', nivelMinimo: ''
     });
 
     useEffect(() => {
@@ -35,12 +30,10 @@ const GestionInventario = () => {
         }
     };
 
-    // Abre el modal bonito de confirmación
     const pedirConfirmacion = (id, estadoActual) => {
         setConfirmacion({ mostrar: true, id, estadoActual });
     };
 
-    // Ejecuta la acción después de confirmar
     const ejecutarCambioEstado = async () => {
         const { id, estadoActual } = confirmacion;
         const accion = estadoActual ? 'desactivar' : 'activar';
@@ -103,12 +96,12 @@ const GestionInventario = () => {
                         <Package className="text-emerald-600" size={32} />
                         Inventario de Clínica
                     </h1>
-                    <p className="text-gray-500 mt-1">Catálogo de productos y medicamentos (M7).</p>
+                    <p className="text-gray-500 mt-1">Catálogo de productos y medicamentos.</p>
                 </div>
                 {(usuario?.rolId === 1 || usuario?.rolId === 3) && (
                     <button 
                         onClick={abrirModalCrear}
-                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg font-bold shadow-sm transition-colors"
+                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
                     >
                         <Plus size={20} />
                         Nuevo Producto
@@ -117,17 +110,17 @@ const GestionInventario = () => {
             </div>
 
             {error && (
-                <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-r-md flex items-center gap-2">
+                <div className="bg-rose-50 border-l-4 border-rose-500 text-rose-700 p-4 mb-6 rounded-r-md flex items-center gap-2 shadow-sm">
                     <ShieldAlert size={20} />
                     <p className="font-medium">{error}</p>
                 </div>
             )}
 
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-xs uppercase tracking-wider">
+                            <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 text-xs uppercase tracking-wider">
                                 <th className="py-4 px-6 font-semibold">Producto</th>
                                 <th className="py-4 px-6 font-semibold">Stock Actual</th>
                                 <th className="py-4 px-6 font-semibold">Nivel Mínimo</th>
@@ -135,11 +128,11 @@ const GestionInventario = () => {
                                 {(usuario?.rolId === 1 || usuario?.rolId === 3) && <th className="py-4 px-6 font-semibold text-right">Acciones</th>}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-gray-50">
                             {productos.map((prod) => {
                                 const stockBajo = prod.CantidadActual <= prod.NivelMinimo;
                                 return (
-                                <tr key={prod.ProductoId} className="hover:bg-gray-50/50 transition-colors">
+                                <tr key={prod.ProductoId} className="hover:bg-gray-50/80 transition-colors">
                                     <td className="py-4 px-6">
                                         <div className="flex flex-col">
                                             <span className="text-sm font-bold text-gray-900">{prod.Nombre}</span>
@@ -147,7 +140,7 @@ const GestionInventario = () => {
                                         </div>
                                     </td>
                                     <td className="py-4 px-6">
-                                        <div className={`flex items-center gap-1.5 text-sm font-bold ${stockBajo ? 'text-red-600' : 'text-emerald-600'}`}>
+                                        <div className={`flex items-center gap-1.5 text-sm font-bold ${stockBajo ? 'text-rose-600' : 'text-emerald-600'}`}>
                                             {stockBajo && <AlertTriangle size={16} />}
                                             {prod.CantidadActual} unds.
                                         </div>
@@ -158,8 +151,8 @@ const GestionInventario = () => {
                                         </span>
                                     </td>
                                     <td className="py-4 px-6">
-                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                                            prod.Estado ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-800'
+                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${
+                                            prod.Estado ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'
                                         }`}>
                                             {prod.Estado ? '● Disponible' : '○ Inactivo'}
                                         </span>
@@ -168,15 +161,13 @@ const GestionInventario = () => {
                                     {(usuario?.rolId === 1 || usuario?.rolId === 3) && (
                                         <td className="py-4 px-6 text-right">
                                             <div className="flex justify-end gap-2">
-                                                
-                                                {/* Botón de Editar con lógica de bloqueo */}
                                                 <button 
                                                     onClick={() => abrirModalEditar(prod)}
                                                     disabled={!prod.Estado}
-                                                    className={`p-2 border rounded-lg transition-all ${
+                                                    className={`p-2 border rounded-lg transition-all shadow-sm ${
                                                         prod.Estado 
-                                                            ? 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50' 
-                                                            : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60'
+                                                            ? 'bg-white border-gray-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200' 
+                                                            : 'bg-gray-50 border-gray-200 text-gray-300 cursor-not-allowed opacity-60'
                                                     }`}
                                                     title={prod.Estado ? "Editar Producto" : "Reactivar para editar"}
                                                 >
@@ -187,7 +178,7 @@ const GestionInventario = () => {
                                                     prod.Estado === true ? (
                                                         <button 
                                                             onClick={() => pedirConfirmacion(prod.ProductoId, prod.Estado)}
-                                                            className="p-2 bg-white border border-gray-300 rounded-lg text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
+                                                            className="p-2 bg-white border border-gray-200 rounded-lg text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all shadow-sm"
                                                             title="Desactivar Producto"
                                                         >
                                                             <ArchiveX size={16} />
@@ -195,7 +186,7 @@ const GestionInventario = () => {
                                                     ) : (
                                                         <button 
                                                             onClick={() => pedirConfirmacion(prod.ProductoId, prod.Estado)}
-                                                            className="p-2 bg-white border border-gray-300 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 transition-all"
+                                                            className="p-2 bg-white border border-gray-200 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 transition-all shadow-sm"
                                                             title="Reactivar Producto"
                                                         >
                                                             <CheckCircle size={16} />
@@ -212,15 +203,14 @@ const GestionInventario = () => {
                 </div>
             </div>
 
-            {/* Modal de Crear/Editar */}
             {mostrarModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-                        <div className="flex justify-between items-center p-6 border-b border-gray-100">
-                            <h2 className="text-xl font-bold text-gray-800">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all">
+                        <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50/50">
+                            <h2 className="text-xl font-extrabold text-gray-800">
                                 {modoEdicion ? 'Editar Producto' : 'Nuevo Producto'}
                             </h2>
-                            <button onClick={() => setMostrarModal(false)} className="text-gray-400 hover:text-gray-600">
+                            <button onClick={() => setMostrarModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                                 <X size={24} />
                             </button>
                         </div>
@@ -228,37 +218,36 @@ const GestionInventario = () => {
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre</label>
-                                <input type="text" required value={formData.nombre} onChange={(e) => setFormData({...formData, nombre: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
+                                <input type="text" required value={formData.nombre} onChange={(e) => setFormData({...formData, nombre: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1">Descripción</label>
-                                <input type="text" value={formData.descripcion} onChange={(e) => setFormData({...formData, descripcion: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
+                                <input type="text" value={formData.descripcion} onChange={(e) => setFormData({...formData, descripcion: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
                             </div>
                             <div className="flex gap-4">
                                 <div className="w-1/2">
                                     <label className="block text-sm font-semibold text-gray-700 mb-1">Cant. Actual</label>
-                                    <input type="number" required value={formData.cantidadActual} onChange={(e) => setFormData({...formData, cantidadActual: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
+                                    <input type="number" required value={formData.cantidadActual} onChange={(e) => setFormData({...formData, cantidadActual: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
                                 </div>
                                 <div className="w-1/2">
                                     <label className="block text-sm font-semibold text-gray-700 mb-1">Nivel Mínimo</label>
-                                    <input type="number" required value={formData.nivelMinimo} onChange={(e) => setFormData({...formData, nivelMinimo: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" />
+                                    <input type="number" required value={formData.nivelMinimo} onChange={(e) => setFormData({...formData, nivelMinimo: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
                                 </div>
                             </div>
 
-                            <div className="pt-4 flex gap-3">
-                                <button type="button" onClick={() => setMostrarModal(false)} className="w-1/2 py-2.5 px-4 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 transition-colors">Cancelar</button>
-                                <button type="submit" className="w-1/2 py-2.5 px-4 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-colors">Guardar</button>
+                            <div className="pt-6 flex gap-3">
+                                <button type="button" onClick={() => setMostrarModal(false)} className="w-1/2 py-2.5 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Cancelar</button>
+                                <button type="submit" className="w-1/2 py-2.5 px-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">Guardar</button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* NUEVO: Modal Bonito de Confirmación */}
             {confirmacion.mostrar && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden p-6 text-center transform transition-all">
-                        <div className={`mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4 ${confirmacion.estadoActual ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                        <div className={`mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4 ${confirmacion.estadoActual ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
                             {confirmacion.estadoActual ? <ArchiveX size={32} /> : <CheckCircle size={32} />}
                         </div>
                         <h3 className="text-xl font-extrabold text-gray-900 mb-2">
@@ -272,14 +261,14 @@ const GestionInventario = () => {
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setConfirmacion({ mostrar: false, id: null, estadoActual: null })}
-                                className="w-1/2 py-2.5 px-4 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 transition-colors"
+                                className="w-1/2 py-2.5 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={ejecutarCambioEstado}
-                                className={`w-1/2 py-2.5 px-4 text-white font-bold rounded-lg shadow-sm transition-colors ${
-                                    confirmacion.estadoActual ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                                className={`w-1/2 py-2.5 px-4 text-white font-bold rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all ${
+                                    confirmacion.estadoActual ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700'
                                 }`}
                             >
                                 Confirmar

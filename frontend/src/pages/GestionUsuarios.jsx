@@ -1,5 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-
 import { useState, useEffect, useContext } from 'react';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
@@ -10,23 +8,16 @@ const GestionUsuarios = () => {
     const [usuariosLista, setUsuariosLista] = useState([]);
     const [error, setError] = useState('');
     
-    // Estados para búsqueda y filtros
     const [busqueda, setBusqueda] = useState('');
-    const [filtroEstado, setFiltroEstado] = useState('activo'); // Por defecto, mostramos solo los activos
+    const [filtroEstado, setFiltroEstado] = useState('activo'); 
     
     const [mostrarModal, setMostrarModal] = useState(false);
     const [modoEdicion, setModoEdicion] = useState(false);
     const [confirmacion, setConfirmacion] = useState({ mostrar: false, id: null, estadoActual: null });
 
     const [formData, setFormData] = useState({
-        id: null,
-        nombreUsuario: '',
-        nombreCompleto: '',
-        email: '',
-        password: '',
-        rolId: '3'
+        id: null, nombreUsuario: '', nombreCompleto: '', email: '', password: '', rolId: '3'
     });
-
 
     const cargarUsuarios = async () => {
         try {
@@ -37,12 +28,10 @@ const GestionUsuarios = () => {
         }
     };
 
-        useEffect(() => {
+    useEffect(() => {
         cargarUsuarios();
     }, []);
 
-
-    // Función auxiliar para obtener el nombre del rol (usada en la tabla y en la búsqueda)
     const getNombreRol = (rolId) => {
         switch(rolId) {
             case 1: return 'Administrador';
@@ -52,23 +41,17 @@ const GestionUsuarios = () => {
         }
     };
 
-    // ========================================================
-    // LÓGICA DE FILTRADO Y BÚSQUEDA (SE EJECUTA EN TIEMPO REAL)
-    // ========================================================
     const usuariosFiltrados = usuariosLista.filter((user) => {
-        // 1. Filtrar por Estado
         const cumpleEstado = 
             filtroEstado === 'todos' ? true :
             filtroEstado === 'activo' ? user.Estado === true :
             filtroEstado === 'inactivo' ? user.Estado === false : true;
 
-        // 2. Filtrar por Búsqueda (Nombre o Puesto)
         const termino = busqueda.toLowerCase();
         const cumpleBusqueda = 
             user.NombreCompleto.toLowerCase().includes(termino) ||
             getNombreRol(user.RolId).toLowerCase().includes(termino);
 
-        // El usuario debe cumplir ambas condiciones para aparecer en la tabla
         return cumpleEstado && cumpleBusqueda;
     });
 
@@ -91,7 +74,7 @@ const GestionUsuarios = () => {
 
     const abrirModalCrear = () => {
         setModoEdicion(false);
-        setFormData({ id: null, nombreCompleto: '', email: '', password: '', rolId: '3' });
+        setFormData({ id: null, nombreUsuario: '', nombreCompleto: '', email: '', password: '', rolId: '3' });
         setMostrarModal(true);
     };
 
@@ -111,16 +94,16 @@ const GestionUsuarios = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-    const payload = {
-        nombreUsuario: formData.nombreUsuario,
-        nombreCompleto: formData.nombreCompleto,
-        correo: formData.email,
-        rolId: parseInt(formData.rolId)
-     };
+            const payload = {
+                nombreUsuario: formData.nombreUsuario,
+                nombreCompleto: formData.nombreCompleto,
+                correo: formData.email,
+                rolId: parseInt(formData.rolId)
+            };
 
-       if (formData.password) {
-        payload.password = formData.password;
-    }
+            if (formData.password) {
+                payload.password = formData.password;
+            }
 
             if (modoEdicion) {
                 await api.put(`/usuarios/${formData.id}`, payload);
@@ -144,15 +127,15 @@ const GestionUsuarios = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl font-extrabold text-gray-900 flex items-center gap-3">
-                        <Users className="text-blue-600" size={32} />
+                        <Users className="text-emerald-600" size={32} />
                         Gestión de Usuarios
                     </h1>
-                    <p className="text-gray-500 mt-1">Administración del personal de la clínica (M1).</p>
+                    <p className="text-gray-500 mt-1">Administración del personal de la clínica.</p>
                 </div>
                 {usuario?.rolId === 1 && (
                     <button 
                         onClick={abrirModalCrear}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-bold shadow-sm transition-colors"
+                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
                     >
                         <Plus size={20} />
                         Nuevo Usuario
@@ -161,33 +144,30 @@ const GestionUsuarios = () => {
             </div>
 
             {error && (
-                <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-r-md flex items-center gap-2">
+                <div className="bg-rose-50 border-l-4 border-rose-500 text-rose-700 p-4 mb-6 rounded-r-md flex items-center gap-2 shadow-sm">
                     <ShieldAlert size={20} />
                     <p className="font-medium">{error}</p>
                 </div>
             )}
 
-            {/* BARRA DE BÚSQUEDA Y FILTROS */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex flex-col sm:flex-row gap-4">
-                {/* Buscador de texto */}
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6 flex flex-col sm:flex-row gap-4">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                     <input
                         type="text"
                         placeholder="Buscar por nombre o puesto (ej. Veterinario)..."
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 transition-all outline-none"
                         value={busqueda}
                         onChange={(e) => setBusqueda(e.target.value)}
                     />
                 </div>
                 
-                {/* Filtro desplegable de estado */}
                 <div className="flex items-center gap-2">
-                    <div className="bg-blue-50 p-2 rounded-lg border border-blue-100">
-                        <Filter className="text-blue-600" size={20} />
+                    <div className="bg-emerald-50 p-2 rounded-xl border border-emerald-100">
+                        <Filter className="text-emerald-600" size={20} />
                     </div>
                     <select
-                        className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-700 font-medium cursor-pointer"
+                        className="border border-gray-300 rounded-xl px-4 py-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-gray-700 font-medium cursor-pointer transition-all"
                         value={filtroEstado}
                         onChange={(e) => setFiltroEstado(e.target.value)}
                     >
@@ -198,19 +178,18 @@ const GestionUsuarios = () => {
                 </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-xs uppercase tracking-wider">
+                            <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 text-xs uppercase tracking-wider">
                                 <th className="py-4 px-6 font-semibold">Personal</th>
                                 <th className="py-4 px-6 font-semibold">Rol en el Sistema</th>
                                 <th className="py-4 px-6 font-semibold">Estado</th>
                                 {usuario?.rolId === 1 && <th className="py-4 px-6 font-semibold text-right">Acciones</th>}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {/* AQUÍ ESTÁ EL CAMBIO: Usamos usuariosFiltrados en lugar de usuariosLista */}
+                        <tbody className="divide-y divide-gray-50">
                             {usuariosFiltrados.length === 0 ? (
                                 <tr>
                                     <td colSpan="4" className="py-8 text-center text-gray-500">
@@ -219,7 +198,7 @@ const GestionUsuarios = () => {
                                 </tr>
                             ) : (
                                 usuariosFiltrados.map((user) => (
-                                    <tr key={user.UsuarioId} className="hover:bg-gray-50/50 transition-colors">
+                                    <tr key={user.UsuarioId} className="hover:bg-gray-50/80 transition-colors">
                                         <td className="py-4 px-6">
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-bold text-gray-900">{user.NombreCompleto}</span>
@@ -227,17 +206,17 @@ const GestionUsuarios = () => {
                                             </div>
                                         </td>
                                         <td className="py-4 px-6">
-                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                                                user.RolId === 1 ? 'bg-purple-100 text-purple-800' :
-                                                user.RolId === 2 ? 'bg-blue-100 text-blue-800' :
-                                                'bg-orange-100 text-orange-800'
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${
+                                                user.RolId === 1 ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                                user.RolId === 2 ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                'bg-orange-50 text-orange-700 border-orange-200'
                                             }`}>
                                                 {getNombreRol(user.RolId)}
                                             </span>
                                         </td>
                                         <td className="py-4 px-6">
-                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                                                user.Estado ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-800'
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${
+                                                user.Estado ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'
                                             }`}>
                                                 {user.Estado ? '● Activo' : '○ Inactivo'}
                                             </span>
@@ -249,10 +228,10 @@ const GestionUsuarios = () => {
                                                     <button 
                                                         onClick={() => abrirModalEditar(user)}
                                                         disabled={!user.Estado}
-                                                        className={`p-2 border rounded-lg transition-all ${
+                                                        className={`p-2 border rounded-lg transition-all shadow-sm ${
                                                             user.Estado 
-                                                                ? 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50' 
-                                                                : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60'
+                                                                ? 'bg-white border-gray-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200' 
+                                                                : 'bg-gray-50 border-gray-200 text-gray-300 cursor-not-allowed opacity-60'
                                                         }`}
                                                         title={user.Estado ? "Editar Usuario" : "Reactivar para editar"}
                                                     >
@@ -263,7 +242,7 @@ const GestionUsuarios = () => {
                                                         user.Estado === true ? (
                                                             <button 
                                                                 onClick={() => pedirConfirmacion(user.UsuarioId, user.Estado)}
-                                                                className="p-2 bg-white border border-gray-300 rounded-lg text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
+                                                                className="p-2 bg-white border border-gray-200 rounded-lg text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all shadow-sm"
                                                                 title="Desactivar Usuario"
                                                             >
                                                                 <ArchiveX size={16} />
@@ -271,7 +250,7 @@ const GestionUsuarios = () => {
                                                         ) : (
                                                             <button 
                                                                 onClick={() => pedirConfirmacion(user.UsuarioId, user.Estado)}
-                                                                className="p-2 bg-white border border-gray-300 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 transition-all"
+                                                                className="p-2 bg-white border border-gray-200 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 transition-all shadow-sm"
                                                                 title="Reactivar Usuario"
                                                             >
                                                                 <CheckCircle size={16} />
@@ -289,38 +268,37 @@ const GestionUsuarios = () => {
                 </div>
             </div>
 
-            {/* Modal de Crear/Editar */}
             {mostrarModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-                        <div className="flex justify-between items-center p-6 border-b border-gray-100">
-                            <h2 className="text-xl font-bold text-gray-800">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all">
+                        <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50/50">
+                            <h2 className="text-xl font-extrabold text-gray-800">
                                 {modoEdicion ? 'Editar Usuario' : 'Nuevo Usuario'}
                             </h2>
-                            <button onClick={() => setMostrarModal(false)} className="text-gray-400 hover:text-gray-600">
+                            <button onClick={() => setMostrarModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                                 <X size={24} />
                             </button>
                         </div>
                         
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div>
-                                <div>
-                                 <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre de Usuario</label>
-                                 <input
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre de Usuario</label>
+                                <input
                                     type="text"
                                     required
                                     value={formData.nombreUsuario}
                                     onChange={(e) => setFormData({ ...formData, nombreUsuario: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
                                     placeholder="doctor1"
                                 />
-                                </div>
+                            </div>
+                            <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre Completo</label>
-                                <input type="text" required value={formData.nombreCompleto} onChange={(e) => setFormData({...formData, nombreCompleto: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
+                                <input type="text" required value={formData.nombreCompleto} onChange={(e) => setFormData({...formData, nombreCompleto: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1">Correo Electrónico</label>
-                                <input type="email" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
+                                <input type="email" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
                             </div>
                             <div className="flex gap-4">
                                 <div className="w-1/2">
@@ -328,10 +306,10 @@ const GestionUsuarios = () => {
                                     <input 
                                         type="password" 
                                         required={!modoEdicion} 
-                                        placeholder={modoEdicion ? "Dejar en blanco para no cambiar" : ""}
+                                        placeholder={modoEdicion ? "En blanco si no cambia" : ""}
                                         value={formData.password} 
                                         onChange={(e) => setFormData({...formData, password: e.target.value})} 
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" 
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-sm" 
                                     />
                                 </div>
                                 <div className="w-1/2">
@@ -339,7 +317,7 @@ const GestionUsuarios = () => {
                                     <select 
                                         value={formData.rolId} 
                                         onChange={(e) => setFormData({...formData, rolId: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
                                     >
                                         <option value="1">Administrador</option>
                                         <option value="2">Veterinario</option>
@@ -348,20 +326,19 @@ const GestionUsuarios = () => {
                                 </div>
                             </div>
 
-                            <div className="pt-4 flex gap-3">
-                                <button type="button" onClick={() => setMostrarModal(false)} className="w-1/2 py-2.5 px-4 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 transition-colors">Cancelar</button>
-                                <button type="submit" className="w-1/2 py-2.5 px-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors">Guardar</button>
+                            <div className="pt-6 flex gap-3">
+                                <button type="button" onClick={() => setMostrarModal(false)} className="w-1/2 py-2.5 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Cancelar</button>
+                                <button type="submit" className="w-1/2 py-2.5 px-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">Guardar</button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* Modal Bonito de Confirmación */}
             {confirmacion.mostrar && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden p-6 text-center transform transition-all">
-                        <div className={`mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4 ${confirmacion.estadoActual ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                        <div className={`mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4 ${confirmacion.estadoActual ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
                             {confirmacion.estadoActual ? <ArchiveX size={32} /> : <CheckCircle size={32} />}
                         </div>
                         <h3 className="text-xl font-extrabold text-gray-900 mb-2">
@@ -375,14 +352,14 @@ const GestionUsuarios = () => {
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setConfirmacion({ mostrar: false, id: null, estadoActual: null })}
-                                className="w-1/2 py-2.5 px-4 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 transition-colors"
+                                className="w-1/2 py-2.5 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={ejecutarCambioEstado}
-                                className={`w-1/2 py-2.5 px-4 text-white font-bold rounded-lg shadow-sm transition-colors ${
-                                    confirmacion.estadoActual ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                                className={`w-1/2 py-2.5 px-4 text-white font-bold rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all ${
+                                    confirmacion.estadoActual ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700'
                                 }`}
                             >
                                 Confirmar

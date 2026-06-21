@@ -32,7 +32,7 @@ const Login = () => {
                         <Dog size={80} strokeWidth={1.5} />
                         <Cat size={56} strokeWidth={1.5} className="-ml-4 mb-1" />
                     </div>
-                    <h1 className="text-5xl font-bold tracking-tight mb-4">VetManager Pro</h1>
+                    <h1 className="text-5xl font-bold tracking-tight mb-4">VetManager</h1>
                     <p className="text-emerald-100 text-lg text-center max-w-md">
                         Gestión inteligente y rápida para tu clínica veterinaria.
                     </p>
