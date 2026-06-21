@@ -26,6 +26,10 @@
     "jsonwebtoken": "^9.0.3",
     "msnodesqlv8": "^5.2.0",
     "mssql": "^12.5.5",
+<<<<<<< HEAD
+    "node-cron": "^4.2.1",
+=======
+>>>>>>> origin/main
     "nodemailer": "^8.0.10"
   },
   "devDependencies": {
