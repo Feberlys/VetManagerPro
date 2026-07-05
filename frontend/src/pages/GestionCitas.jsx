@@ -20,6 +20,16 @@ const GestionCitas = () => {
   const [mostrarModalVacuna, setMostrarModalVacuna] = useState(false);
   const [citaVacuna, setCitaVacuna] = useState(null);
 
+  const [consultaData, setConsultaData] = useState({
+  diagnostico: '',
+  tratamiento: '',
+  notasAdicionales: '',
+  productosUsados: []
+});
+
+  const [productoSeleccionado, setProductoSeleccionado] = useState('');
+  const [cantidadProducto, setCantidadProducto] = useState(1);
+
   const [vacunaData, setVacunaData] = useState({
     nombreVacuna: '',
     fechaAplicacion: '',
@@ -143,39 +153,26 @@ const GestionCitas = () => {
 
   const abrirModalVacuna = (cita) => {
     setCitaVacuna(cita);
+
+    setConsultaData({
+    diagnostico: '',
+    tratamiento: '',
+    notasAdicionales: '',
+    productosUsados: []
+  });
+
+    setProductoSeleccionado('');
+    setCantidadProducto(1);
+
     setVacunaData({
-      nombreVacuna: '', fechaAplicacion: new Date().toISOString().substring(0, 10), fechaProximaDosis: '', productoId: ''
-    });
+    nombreVacuna: '',
+    fechaAplicacion: new Date().toISOString().substring(0, 10),
+    fechaProximaDosis: '',
+    productoId: ''
+  });
+
     setMostrarModalVacuna(true);
-  };
-
-  const atenderSinVacuna = async () => {
-    if (!citaVacuna) return;
-    try {
-      await api.patch(`/citas/${citaVacuna.CitaId}/estado`, { estadoCitaId: 2 });
-      setMostrarModalVacuna(false); setCitaVacuna(null); cargarDatos();
-    } catch (err) {
-      alert(err.response?.data?.error || 'Error al marcar la cita como atendida');
-    }
-  };
-
-  const registrarVacunaYAtender = async (e) => {
-    e.preventDefault();
-    if (!citaVacuna) return;
-    try {
-      await api.post('/vacunas', {
-        mascotaId: citaVacuna.MascotaId,
-        nombreVacuna: vacunaData.nombreVacuna,
-        fechaAplicacion: vacunaData.fechaAplicacion,
-        fechaProximaDosis: vacunaData.fechaProximaDosis || null,
-        productoId: vacunaData.productoId ? Number(vacunaData.productoId) : null
-      });
-      await api.patch(`/citas/${citaVacuna.CitaId}/estado`, { estadoCitaId: 2 });
-      setMostrarModalVacuna(false); setCitaVacuna(null); cargarDatos();
-    } catch (err) {
-      alert(err.response?.data?.error || 'Error al registrar vacuna y atender la cita');
-    }
-  };
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -193,6 +190,144 @@ const GestionCitas = () => {
       alert(err.response?.data?.error || 'Error al guardar la cita');
     }
   };
+
+  const agregarProductoConsulta = () => {
+  if (!productoSeleccionado) {
+    alert('Selecciona un producto.');
+    return;
+  }
+
+  const cantidad = Number(cantidadProducto);
+
+  if (!Number.isInteger(cantidad) || cantidad <= 0) {
+    alert('La cantidad debe ser mayor que 0.');
+    return;
+  }
+
+  const producto = productos.find(
+    (item) => Number(item.ProductoId) === Number(productoSeleccionado)
+  );
+
+  if (!producto) {
+    alert('Producto no encontrado.');
+    return;
+  }
+
+  const productoExistente = consultaData.productosUsados.find(
+    (item) => Number(item.productoId) === Number(productoSeleccionado)
+  );
+
+  if (productoExistente) {
+    setConsultaData((prev) => ({
+      ...prev,
+      productosUsados: prev.productosUsados.map((item) =>
+        Number(item.productoId) === Number(productoSeleccionado)
+          ? {
+              ...item,
+              cantidad: item.cantidad + cantidad
+            }
+          : item
+      )
+    }));
+  } else {
+    setConsultaData((prev) => ({
+      ...prev,
+      productosUsados: [
+        ...prev.productosUsados,
+        {
+          productoId: Number(producto.ProductoId),
+          nombre: producto.Nombre,
+          cantidad
+        }
+      ]
+    }));
+  }
+
+  setProductoSeleccionado('');
+  setCantidadProducto(1);
+};
+
+const eliminarProductoConsulta = (productoId) => {
+  setConsultaData((prev) => ({
+    ...prev,
+    productosUsados: prev.productosUsados.filter(
+      (item) => Number(item.productoId) !== Number(productoId)
+    )
+  }));
+};
+
+const finalizarConsulta = async (e) => {
+  e.preventDefault();
+
+  if (!citaVacuna) {
+    return;
+  }
+
+  if (!consultaData.diagnostico.trim()) {
+    alert('El diagnóstico es obligatorio.');
+    return;
+  }
+
+  try {
+    // 1. Registrar la consulta médica
+    await api.post('/historial', {
+      mascotaId: Number(citaVacuna.MascotaId),
+      citaId: Number(citaVacuna.CitaId),
+      diagnostico: consultaData.diagnostico.trim(),
+      tratamiento: consultaData.tratamiento.trim() || null,
+      notasAdicionales: consultaData.notasAdicionales.trim() || null,
+      productosUsados: consultaData.productosUsados.map((producto) => ({
+        productoId: Number(producto.productoId),
+        cantidad: Number(producto.cantidad)
+      }))
+    });
+
+    // 2. Registrar vacuna solamente si fue indicada
+    if (vacunaData.nombreVacuna.trim()) {
+      if (!vacunaData.fechaAplicacion) {
+        alert('Debes indicar la fecha de aplicación de la vacuna.');
+        return;
+      }
+
+      await api.post('/vacunas', {
+        mascotaId: Number(citaVacuna.MascotaId),
+        nombreVacuna: vacunaData.nombreVacuna.trim(),
+        fechaAplicacion: vacunaData.fechaAplicacion,
+        fechaProximaDosis: vacunaData.fechaProximaDosis || null,
+        productoId: vacunaData.productoId
+          ? Number(vacunaData.productoId)
+          : null
+      });
+    }
+
+    // 3. Marcar la cita como atendida
+    await api.patch(`/citas/${citaVacuna.CitaId}/estado`, {
+      estadoCitaId: 2
+    });
+
+    setMostrarModalVacuna(false);
+    setCitaVacuna(null);
+
+    setConsultaData({
+      diagnostico: '',
+      tratamiento: '',
+      notasAdicionales: '',
+      productosUsados: []
+    });
+
+    cargarDatos();
+
+    alert('Consulta registrada y cita atendida correctamente.');
+  } catch (err) {
+    console.error('Error al finalizar la consulta:', err);
+
+    alert(
+      err.response?.data?.error ||
+      err.response?.data?.detalle ||
+      'Error al registrar la consulta médica'
+    );
+  }
+};
 
   return (
     <div className="max-w-7xl mx-auto p-6 lg:p-8 bg-gray-50 min-h-screen relative">
@@ -380,49 +515,291 @@ const GestionCitas = () => {
         </div>
       )}
 
-      {mostrarModalVacuna && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transform transition-all">
-            <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50/50">
-              <h2 className="text-xl font-extrabold text-gray-800">Atender Cita</h2>
-              <button onClick={() => setMostrarModalVacuna(false)} className="text-gray-400 hover:text-gray-600 transition-colors"><X size={24} /></button>
+{mostrarModalVacuna && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+    <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50/50 sticky top-0 z-10">
+        <div>
+          <h2 className="text-xl font-extrabold text-gray-800">
+            Atender Cita
+          </h2>
+
+          <p className="text-sm text-gray-500 mt-1">
+            {citaVacuna
+              ? `${citaVacuna.NombreMascota || obtenerNombreMascota(citaVacuna.MascotaId)} · ${citaVacuna.Motivo}`
+              : ''}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setMostrarModalVacuna(false)}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X size={24} />
+        </button>
+      </div>
+
+      <form onSubmit={finalizarConsulta} className="p-6 space-y-6">
+        <div>
+          <h3 className="text-lg font-extrabold text-gray-800 mb-4">
+            Consulta médica
+          </h3>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Diagnóstico *
+              </label>
+
+              <textarea
+                required
+                rows="3"
+                value={consultaData.diagnostico}
+                onChange={(e) =>
+                  setConsultaData({
+                    ...consultaData,
+                    diagnostico: e.target.value
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                placeholder="Describe el diagnóstico de la mascota"
+              />
             </div>
-            <form onSubmit={registrarVacunaYAtender} className="p-6 space-y-4">
-              <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
-                <p className="text-sm text-emerald-800 font-medium">Puedes registrar una vacuna aplicada antes de marcar la cita como atendida.</p>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre de la vacuna</label>
-                <input type="text" value={vacunaData.nombreVacuna} onChange={(e) => setVacunaData({ ...vacunaData, nombreVacuna: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none" placeholder="Ej: Rabia, Parvovirus, Moquillo" />
-              </div>
-              <div className="flex gap-4">
-                <div className="w-1/2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Fecha aplicación</label>
-                  <input type="date" value={vacunaData.fechaAplicacion} onChange={(e) => setVacunaData({ ...vacunaData, fechaAplicacion: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none" />
-                </div>
-                <div className="w-1/2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Próxima dosis</label>
-                  <input type="date" value={vacunaData.fechaProximaDosis} onChange={(e) => setVacunaData({ ...vacunaData, fechaProximaDosis: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Producto usado</label>
-                <select value={vacunaData.productoId} onChange={(e) => setVacunaData({ ...vacunaData, productoId: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none">
-                  <option value="">Sin producto asociado</option>
-                  {productos.map((producto) => (
-                    <option key={producto.ProductoId} value={producto.ProductoId}>{producto.Nombre}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="pt-6 flex flex-col sm:flex-row gap-3">
-                <button type="button" onClick={() => setMostrarModalVacuna(false)} className="w-full py-2.5 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Cancelar</button>
-                <button type="button" onClick={atenderSinVacuna} className="w-full py-2.5 px-4 bg-white border border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-colors shadow-sm">Atender sin vacuna</button>
-                <button type="submit" disabled={!vacunaData.nombreVacuna || !vacunaData.fechaAplicacion} className="w-full py-2.5 px-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 disabled:bg-gray-300 disabled:cursor-not-allowed">Registrar vacuna</button>
-              </div>
-            </form>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Tratamiento
+              </label>
+
+              <textarea
+                rows="3"
+                value={consultaData.tratamiento}
+                onChange={(e) =>
+                  setConsultaData({
+                    ...consultaData,
+                    tratamiento: e.target.value
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                placeholder="Tratamiento indicado"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Notas adicionales
+              </label>
+
+              <textarea
+                rows="2"
+                value={consultaData.notasAdicionales}
+                onChange={(e) =>
+                  setConsultaData({
+                    ...consultaData,
+                    notasAdicionales: e.target.value
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                placeholder="Observaciones adicionales"
+              />
+            </div>
           </div>
         </div>
-      )}
+
+        <div className="border-t border-gray-100 pt-6">
+          <h3 className="text-lg font-extrabold text-gray-800 mb-4">
+            Productos utilizados
+          </h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px_auto] gap-3">
+            <select
+              value={productoSeleccionado}
+              onChange={(e) => setProductoSeleccionado(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
+            >
+              <option value="">Seleccione un producto</option>
+
+              {productos.map((producto) => (
+                <option
+                  key={producto.ProductoId}
+                  value={producto.ProductoId}
+                >
+                  {producto.Nombre} - Stock: {producto.CantidadActual}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={cantidadProducto}
+              onChange={(e) => setCantidadProducto(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
+              placeholder="Cantidad"
+            />
+
+            <button
+              type="button"
+              onClick={agregarProductoConsulta}
+              className="px-4 py-2 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition-colors"
+            >
+              Agregar
+            </button>
+          </div>
+
+          {consultaData.productosUsados.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {consultaData.productosUsados.map((producto) => (
+                <div
+                  key={producto.productoId}
+                  className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-xl px-4 py-3"
+                >
+                  <div>
+                    <p className="font-bold text-gray-800">
+                      {producto.nombre}
+                    </p>
+
+                    <p className="text-sm text-gray-500">
+                      Cantidad utilizada: {producto.cantidad}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      eliminarProductoConsulta(producto.productoId)
+                    }
+                    className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg"
+                    title="Eliminar producto"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-gray-100 pt-6">
+          <h3 className="text-lg font-extrabold text-gray-800">
+            Vacuna aplicada
+          </h3>
+
+          <p className="text-sm text-gray-500 mb-4">
+            Opcional. Déjalo vacío si no se aplicó ninguna vacuna.
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Nombre de la vacuna
+              </label>
+
+              <input
+                type="text"
+                value={vacunaData.nombreVacuna}
+                onChange={(e) =>
+                  setVacunaData({
+                    ...vacunaData,
+                    nombreVacuna: e.target.value
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
+                placeholder="Ej: Rabia, Parvovirus, Moquillo"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Fecha aplicación
+                </label>
+
+                <input
+                  type="date"
+                  value={vacunaData.fechaAplicacion}
+                  onChange={(e) =>
+                    setVacunaData({
+                      ...vacunaData,
+                      fechaAplicacion: e.target.value
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Próxima dosis
+                </label>
+
+                <input
+                  type="date"
+                  value={vacunaData.fechaProximaDosis}
+                  onChange={(e) =>
+                    setVacunaData({
+                      ...vacunaData,
+                      fechaProximaDosis: e.target.value
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Producto asociado a la vacuna
+              </label>
+
+              <select
+                value={vacunaData.productoId}
+                onChange={(e) =>
+                  setVacunaData({
+                    ...vacunaData,
+                    productoId: e.target.value
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
+              >
+                <option value="">Sin producto asociado</option>
+
+                {productos.map((producto) => (
+                  <option
+                    key={producto.ProductoId}
+                    value={producto.ProductoId}
+                  >
+                    {producto.Nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-6 flex gap-3 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={() => setMostrarModalVacuna(false)}
+            className="w-1/2 py-2.5 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            disabled={!consultaData.diagnostico.trim()}
+            className="w-1/2 py-2.5 px-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+          >
+            Finalizar Consulta
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
     </div>
   );
 };
