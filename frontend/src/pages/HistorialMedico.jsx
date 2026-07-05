@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { useState, useEffect, useContext } from 'react';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
@@ -13,6 +15,13 @@ const HistorialMedico = () => {
 
     const [mascotaId, setMascotaId] = useState('');
     const [mascotaBuscada, setMascotaBuscada] = useState(null);
+
+    const [mascotas, setMascotas] = useState([]);
+    const [clientes, setClientes] = useState([]);
+
+    const [terminoBusqueda, setTerminoBusqueda] = useState('');
+    const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
+    const [mostrarResultados, setMostrarResultados] = useState(false);
 
     const [historial, setHistorial] = useState([]);
     const [vacunas, setVacunas] = useState([]);
@@ -35,38 +44,143 @@ const HistorialMedico = () => {
         nombreVacuna: '', fechaAplicacion: '', fechaProximaDosis: '', productoId: ''
     });
 
-    const cargarProductos = async () => {
-        try {
-            const res = await api.get('/productos');
-            setProductos(res.data.filter(p => p.Estado === true && p.CantidadActual > 0));
-        } catch (err) {
-            console.error('Error cargando productos:', err);
-        }
+    const cargarDatosIniciales = async () => {
+    try {
+        const [productosRes, mascotasRes, clientesRes] = await Promise.all([
+            api.get('/productos'),
+            api.get('/mascotas'),
+            api.get('/clientes')
+        ]);
+
+        setProductos(
+            productosRes.data.filter(
+                (producto) =>
+                    producto.Estado === true &&
+                    Number(producto.CantidadActual) > 0
+            )
+        );
+
+        setMascotas(mascotasRes.data);
+        setClientes(clientesRes.data);
+    } catch (err) {
+        console.error('Error cargando datos del historial:', err);
+        setError('No se pudieron cargar los datos del historial.');
+    }
+};
+
+    useEffect(() => { cargarDatosIniciales(); }, []);
+
+    const obtenerNombreCliente = (cliente) => {
+    if (!cliente) {
+        return 'Cliente no identificado';
+    }
+
+    return (
+        cliente.NombreCompleto ||
+        cliente.Nombre ||
+        cliente.NombreCliente ||
+        cliente.Correo ||
+        'Cliente no identificado'
+    );
+};
+
+    const obtenerClienteMascota = (mascota) => {
+    if (!mascota) {
+        return null;
+    }
+
+    return clientes.find(
+        (cliente) =>
+            Number(cliente.ClienteId) === Number(mascota.ClienteId)
+        );
     };
 
-    useEffect(() => { cargarProductos(); }, []);
+    const obtenerNombrePropietarioMascota = (mascota) => {
+    const cliente = obtenerClienteMascota(mascota);
 
-    const buscarHistorial = async () => {
-        if (!mascotaId) return;
-        setCargando(true);
-        setError('');
-        try {
-            const [resHistorial, resVacunas] = await Promise.all([
-                api.get(`/historial/mascota/${mascotaId}`),
-                api.get(`/vacunas/mascota/${mascotaId}`)
-            ]);
-            setHistorial(resHistorial.data);
-            setVacunas(resVacunas.data);
-            setMascotaBuscada(mascotaId);
-        } catch {
-            setError('No se encontró historial para esa mascota o ocurrió un error.');
-            setHistorial([]);
-            setVacunas([]);
-            setMascotaBuscada(null);
-        } finally {
-            setCargando(false);
-        }
+    return obtenerNombreCliente(cliente);
     };
+
+    const buscarMascotas = (valor) => {
+    setTerminoBusqueda(valor);
+    setMascotaId('');
+    setMascotaBuscada(null);
+
+    const termino = valor.trim().toLowerCase();
+
+    if (!termino) {
+        setResultadosBusqueda([]);
+        setMostrarResultados(false);
+        return;
+    }
+
+    const resultados = mascotas.filter((mascota) => {
+        const nombreMascota = String(
+            mascota.Nombre || ''
+        ).toLowerCase();
+
+        const nombrePropietario = String(
+            obtenerNombrePropietarioMascota(mascota)
+        ).toLowerCase();
+
+        return (
+            nombreMascota.includes(termino) ||
+            nombrePropietario.includes(termino)
+        );
+    });
+
+    setResultadosBusqueda(resultados);
+    setMostrarResultados(true);
+    };
+
+    const seleccionarMascota = async (mascota) => {
+    setMascotaId(String(mascota.MascotaId));
+    setMascotaBuscada(mascota);
+
+    setTerminoBusqueda(
+        `${mascota.Nombre} — ${obtenerNombrePropietarioMascota(mascota)}`
+    );
+
+    setResultadosBusqueda([]);
+    setMostrarResultados(false);
+
+    await buscarHistorialPorMascota(mascota);
+    };
+
+    const buscarHistorialPorMascota = async (mascota) => {
+    if (!mascota?.MascotaId) {
+        return;
+    }
+
+    setCargando(true);
+    setError('');
+
+    try {
+        const [resHistorial, resVacunas] = await Promise.all([
+            api.get(`/historial/mascota/${mascota.MascotaId}`),
+            api.get(`/vacunas/mascota/${mascota.MascotaId}`)
+        ]);
+
+        setHistorial(resHistorial.data);
+        setVacunas(resVacunas.data);
+
+        setMascotaId(String(mascota.MascotaId));
+        setMascotaBuscada(mascota);
+    } catch (err) {
+        console.error('Error buscando historial:', err);
+
+        setError(
+            'No se pudo cargar el historial médico de la mascota seleccionada.'
+        );
+
+        setHistorial([]);
+        setVacunas([]);
+        setMascotaBuscada(null);
+    } finally {
+        setCargando(false);
+    }
+};
+
 
     const agregarProducto = () => {
         if (!productoSeleccionado || cantidadProducto <= 0) return;
@@ -91,46 +205,83 @@ const HistorialMedico = () => {
     };
 
     const guardarConsulta = async (e) => {
-        e.preventDefault();
-        try {
-            await api.post('/historial', {
-                mascotaId: parseInt(mascotaId),
-                citaId: formConsulta.citaId ? parseInt(formConsulta.citaId) : null,
-                diagnostico: formConsulta.diagnostico,
-                tratamiento: formConsulta.tratamiento,
-                notasAdicionales: formConsulta.notasAdicionales,
-                productosUsados: productosAgregados.map(p => ({
-                    productoId: p.productoId, cantidad: p.cantidad
-                }))
-            });
-            setModalConsulta(false);
-            setFormConsulta({ diagnostico: '', tratamiento: '', notasAdicionales: '', citaId: '' });
-            setProductosAgregados([]);
-            cargarProductos();
-            buscarHistorial();
-        } catch (err) {
-            alert(err.response?.data?.error || 'Error al guardar la consulta.');
+    e.preventDefault();
+
+    try {
+        await api.post('/historial', {
+            mascotaId: Number(mascotaId),
+            citaId: formConsulta.citaId
+                ? Number(formConsulta.citaId)
+                : null,
+            diagnostico: formConsulta.diagnostico,
+            tratamiento: formConsulta.tratamiento,
+            notasAdicionales: formConsulta.notasAdicionales,
+            productosUsados: productosAgregados.map((producto) => ({
+                productoId: producto.productoId,
+                cantidad: producto.cantidad
+            }))
+        });
+
+        setModalConsulta(false);
+
+        setFormConsulta({
+            diagnostico: '',
+            tratamiento: '',
+            notasAdicionales: '',
+            citaId: ''
+        });
+
+        setProductosAgregados([]);
+
+        await cargarDatosIniciales();
+
+        if (mascotaBuscada) {
+            await buscarHistorialPorMascota(mascotaBuscada);
         }
-    };
+    } catch (err) {
+        alert(
+            err.response?.data?.error ||
+            'Error al guardar la consulta.'
+        );
+    }
+};
 
     const guardarVacuna = async (e) => {
-        e.preventDefault();
-        try {
-            await api.post('/vacunas', {
-                mascotaId: parseInt(mascotaId),
-                nombreVacuna: formVacuna.nombreVacuna,
-                fechaAplicacion: formVacuna.fechaAplicacion,
-                fechaProximaDosis: formVacuna.fechaProximaDosis || null,
-                productoId: formVacuna.productoId ? parseInt(formVacuna.productoId) : null
-            });
-            setModalVacuna(false);
-            setFormVacuna({ nombreVacuna: '', fechaAplicacion: '', fechaProximaDosis: '', productoId: '' });
-            cargarProductos();
-            buscarHistorial();
-        } catch (err) {
-            alert(err.response?.data?.error || 'Error al guardar la vacuna.');
+    e.preventDefault();
+
+    try {
+        await api.post('/vacunas', {
+            mascotaId: Number(mascotaId),
+            nombreVacuna: formVacuna.nombreVacuna,
+            fechaAplicacion: formVacuna.fechaAplicacion,
+            fechaProximaDosis:
+                formVacuna.fechaProximaDosis || null,
+            productoId: formVacuna.productoId
+                ? Number(formVacuna.productoId)
+                : null
+        });
+
+        setModalVacuna(false);
+
+        setFormVacuna({
+            nombreVacuna: '',
+            fechaAplicacion: '',
+            fechaProximaDosis: '',
+            productoId: ''
+        });
+
+        await cargarDatosIniciales();
+
+        if (mascotaBuscada) {
+            await buscarHistorialPorMascota(mascotaBuscada);
         }
-    };
+    } catch (err) {
+        alert(
+            err.response?.data?.error ||
+            'Error al guardar la vacuna.'
+        );
+    }
+};
 
     const formatFecha = (fechaStr) => {
         if (!fechaStr) return '—';
@@ -176,36 +327,99 @@ const HistorialMedico = () => {
                 </div>
 
                 {/* Buscador */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <label className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1.5">
-                        <PawPrint size={16} className="text-emerald-600" /> ID de la mascota
-                    </label>
-                    <div className="flex gap-3">
-                        <input
-                            type="number"
-                            value={mascotaId}
-                            onChange={e => setMascotaId(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && buscarHistorial()}
-                            placeholder="Ingresa el ID de la mascota..."
-                            className="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
-                        />
-                        <button
-                            onClick={buscarHistorial}
-                            disabled={!mascotaId || cargando}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"
-                        >
-                            <Search size={18} />
-                            {cargando ? 'Buscando...' : 'Buscar'}
-                        </button>
-                    </div>
-                    {error && (
-                        <p className="text-rose-500 text-sm mt-3 flex items-center gap-1.5 font-medium">
-                            <AlertTriangle size={16} /> {error}
-                        </p>
-                    )}
-                </div>
+<div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+    <label className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1.5">
+        <PawPrint size={16} className="text-emerald-600" />
+        Buscar mascota o propietario
+    </label>
 
-                {mascotaBuscada && (
+    <div className="relative">
+        <div className="flex gap-3">
+            <div className="relative flex-1">
+                <Search
+                    size={18}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+
+                <input
+                    type="text"
+                    value={terminoBusqueda}
+                    onChange={(e) => buscarMascotas(e.target.value)}
+                    onFocus={() => {
+                        if (resultadosBusqueda.length > 0) {
+                            setMostrarResultados(true);
+                        }
+                    }}
+                    placeholder="Ej: Zev o Miguel Guerrero..."
+                    className="w-full border border-gray-300 rounded-xl pl-11 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                />
+            </div>
+        </div>
+
+        {mostrarResultados && (
+            <div className="absolute z-30 left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden max-h-80 overflow-y-auto">
+                {resultadosBusqueda.length === 0 ? (
+                    <div className="p-5 text-center text-gray-500 text-sm">
+                        No se encontraron mascotas ni propietarios con ese nombre.
+                    </div>
+                ) : (
+                    resultadosBusqueda.map((mascota) => (
+                        <button
+                            key={mascota.MascotaId}
+                            type="button"
+                            onClick={() => seleccionarMascota(mascota)}
+                            className="w-full text-left px-5 py-4 hover:bg-emerald-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-center">
+                                    <PawPrint
+                                        size={19}
+                                        className="text-emerald-600"
+                                    />
+                                </div>
+
+                                <div>
+                                    <p className="font-extrabold text-gray-900">
+                                        {mascota.Nombre}
+                                    </p>
+
+                                    <p className="text-sm text-gray-500 mt-0.5">
+                                        Propietario:{' '}
+                                        <span className="font-semibold text-gray-700">
+                                            {obtenerNombrePropietarioMascota(mascota)}
+                                        </span>
+                                    </p>
+
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        {mascota.Especie || 'Especie no registrada'}
+                                        {mascota.Raza
+                                            ? ` · ${mascota.Raza}`
+                                            : ''}
+                                    </p>
+                                </div>
+                            </div>
+                        </button>
+                    ))
+                )}
+            </div>
+        )}
+    </div>
+
+    {cargando && (
+        <p className="text-emerald-600 text-sm mt-3 font-medium">
+            Cargando historial médico...
+        </p>
+    )}
+
+    {error && (
+        <p className="text-rose-500 text-sm mt-3 flex items-center gap-1.5 font-medium">
+            <AlertTriangle size={16} />
+            {error}
+        </p>
+    )}
+</div>
+
+             {mascotaBuscada && (
                     <>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="anim-in bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center gap-4" style={{ animationDelay: '0ms' }}>

@@ -1,6 +1,5 @@
 const historialModel = require('../models/historialModel');
-const { getConnection } = require('../config/db');
-const sql = require('mssql');
+const { sql, getConnection } = require('../config/db');
 
 // RF-14: Registrar consulta médica con productos
 const crearConsulta = async (req, res) => {
