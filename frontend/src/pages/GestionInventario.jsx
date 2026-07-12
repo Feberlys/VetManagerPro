@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
-import { Package, ShieldAlert, Plus, Edit2, X, ArchiveX, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Package, ShieldAlert, Plus, Edit2, X, ArchiveX, AlertTriangle, CheckCircle, Search, Filter } from 'lucide-react';
 
 const GestionInventario = () => {
     const { usuario } = useContext(AuthContext);
@@ -13,8 +13,19 @@ const GestionInventario = () => {
     
     const [confirmacion, setConfirmacion] = useState({ mostrar: false, id: null, estadoActual: null });
 
+    // Estados para los filtros y búsqueda
+    const [busqueda, setBusqueda] = useState('');
+    const [filtroEstado, setFiltroEstado] = useState('todos'); // 'todos', 'activos', 'inactivos'
+    const [filtroCategoria, setFiltroCategoria] = useState('todas');
+
     const [formData, setFormData] = useState({
-        id: null, nombre: '', descripcion: '', cantidadActual: '', nivelMinimo: ''
+        id: null, 
+        nombre: '', 
+        descripcion: '', 
+        cantidadActual: '', 
+        nivelMinimo: '',
+        categoria: 'General',
+        fechaVencimiento: ''
     });
 
     useEffect(() => {
@@ -49,30 +60,49 @@ const GestionInventario = () => {
 
     const abrirModalCrear = () => {
         setModoEdicion(false);
-        setFormData({ id: null, nombre: '', descripcion: '', cantidadActual: '', nivelMinimo: '' });
+        setFormData({ 
+            id: null, 
+            nombre: '', 
+            descripcion: '', 
+            cantidadActual: '', 
+            nivelMinimo: '',
+            categoria: 'General',
+            fechaVencimiento: '' 
+        });
         setMostrarModal(true);
     };
 
     const abrirModalEditar = (prod) => {
         setModoEdicion(true);
+        const fechaFormateada = prod.FechaVencimiento ? prod.FechaVencimiento.split('T')[0] : '';
+        
         setFormData({
             id: prod.ProductoId,
             nombre: prod.Nombre,
             descripcion: prod.Descripcion,
             cantidadActual: prod.CantidadActual,
-            nivelMinimo: prod.NivelMinimo
+            nivelMinimo: prod.NivelMinimo,
+            categoria: prod.Categoria || 'General',
+            fechaVencimiento: fechaFormateada
         });
         setMostrarModal(true);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        if (parseInt(formData.cantidadActual) < 0 || parseInt(formData.nivelMinimo) < 0) {
+            return alert("El stock y el nivel mínimo no pueden ser números negativos");
+        }
+
         try {
             const payload = {
                 nombre: formData.nombre,
                 descripcion: formData.descripcion,
                 cantidadActual: parseInt(formData.cantidadActual),
-                nivelMinimo: parseInt(formData.nivelMinimo)
+                nivelMinimo: parseInt(formData.nivelMinimo),
+                categoria: formData.categoria,
+                fechaVencimiento: formData.fechaVencimiento || null
             };
 
             if (modoEdicion) {
@@ -87,10 +117,30 @@ const GestionInventario = () => {
         }
     };
 
+    // Lógica de filtrado combinada (Buscador + Estado + Categoría)
+    const productosFiltrados = productos.filter(prod => {
+        // Filtro por texto (busca en nombre y descripción)
+        const textoBusqueda = busqueda.toLowerCase();
+        const coincideTexto = prod.Nombre.toLowerCase().includes(textoBusqueda) || 
+                              (prod.Descripcion && prod.Descripcion.toLowerCase().includes(textoBusqueda));
+        
+        // Filtro por estado
+        const coincideEstado = filtroEstado === 'todos' 
+            ? true 
+            : (filtroEstado === 'activos' ? prod.Estado === true : prod.Estado === false);
+        
+        // Filtro por categoría
+        const coincideCategoria = filtroCategoria === 'todas' 
+            ? true 
+            : prod.Categoria === filtroCategoria;
+
+        return coincideTexto && coincideEstado && coincideCategoria;
+    });
+
     return (
         <div className="max-w-7xl mx-auto p-6 lg:p-8 bg-gray-50 min-h-screen relative">
             
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
                     <h1 className="text-3xl font-extrabold text-gray-900 flex items-center gap-3">
                         <Package className="text-emerald-600" size={32} />
@@ -109,6 +159,48 @@ const GestionInventario = () => {
                 )}
             </div>
 
+            {/* BARRA DE FILTROS Y BÚSQUEDA */}
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4">
+                <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                    <input 
+                        type="text" 
+                        placeholder="Buscar por nombre o descripción..." 
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-gray-50/50"
+                    />
+                </div>
+                
+                <div className="flex gap-4 md:w-auto w-full">
+                    <div className="flex items-center gap-2 w-1/2 md:w-auto">
+                        <Filter className="text-gray-400" size={18} />
+                        <select 
+                            value={filtroEstado} 
+                            onChange={(e) => setFiltroEstado(e.target.value)}
+                            className="w-full md:w-36 py-2 px-3 border border-gray-200 rounded-xl outline-none focus:ring-emerald-500 cursor-pointer bg-gray-50/50 text-sm font-medium"
+                        >
+                            <option value="todos">Todos los estados</option>
+                            <option value="activos">Activos</option>
+                            <option value="inactivos">Inactivos</option>
+                        </select>
+                    </div>
+                    
+                    <select 
+                        value={filtroCategoria} 
+                        onChange={(e) => setFiltroCategoria(e.target.value)}
+                        className="w-1/2 md:w-48 py-2 px-3 border border-gray-200 rounded-xl outline-none focus:ring-emerald-500 cursor-pointer bg-gray-50/50 text-sm font-medium"
+                    >
+                        <option value="todas">Todas las categorías</option>
+                        <option value="General">General</option>
+                        <option value="Analgésico">Analgésico</option>
+                        <option value="Vacuna">Vacuna</option>
+                        <option value="Antibiótico">Antibiótico</option>
+                        <option value="Antiinflamatorio">Antiinflamatorio</option>
+                    </select>
+                </div>
+            </div>
+
             {error && (
                 <div className="bg-rose-50 border-l-4 border-rose-500 text-rose-700 p-4 mb-6 rounded-r-md flex items-center gap-2 shadow-sm">
                     <ShieldAlert size={20} />
@@ -124,80 +216,101 @@ const GestionInventario = () => {
                                 <th className="py-4 px-6 font-semibold">Producto</th>
                                 <th className="py-4 px-6 font-semibold">Stock Actual</th>
                                 <th className="py-4 px-6 font-semibold">Nivel Mínimo</th>
+                                <th className="py-4 px-6 font-semibold">Categoría</th>
+                                <th className="py-4 px-6 font-semibold">Vencimiento</th>
                                 <th className="py-4 px-6 font-semibold">Estado</th>
                                 {(usuario?.rolId === 1 || usuario?.rolId === 3) && <th className="py-4 px-6 font-semibold text-right">Acciones</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {productos.map((prod) => {
-                                const stockBajo = prod.CantidadActual <= prod.NivelMinimo;
-                                return (
-                                <tr key={prod.ProductoId} className="hover:bg-gray-50/80 transition-colors">
-                                    <td className="py-4 px-6">
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-gray-900">{prod.Nombre}</span>
-                                            <span className="text-xs text-gray-500">{prod.Descripcion}</span>
-                                        </div>
+                            {productosFiltrados.length === 0 ? (
+                                <tr>
+                                    <td colSpan="7" className="py-8 text-center text-gray-500">
+                                        No se encontraron productos con esos filtros.
                                     </td>
-                                    <td className="py-4 px-6">
-                                        <div className={`flex items-center gap-1.5 text-sm font-bold ${stockBajo ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                            {stockBajo && <AlertTriangle size={16} />}
-                                            {prod.CantidadActual} unds.
-                                        </div>
-                                    </td>
-                                    <td className="py-4 px-6">
-                                        <span className="text-sm font-medium text-gray-500">
-                                            {prod.NivelMinimo} unds.
-                                        </span>
-                                    </td>
-                                    <td className="py-4 px-6">
-                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${
-                                            prod.Estado ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'
-                                        }`}>
-                                            {prod.Estado ? '● Disponible' : '○ Inactivo'}
-                                        </span>
-                                    </td>
+                                </tr>
+                            ) : (
+                                productosFiltrados.map((prod) => {
+                                    const stockBajo = parseInt(prod.CantidadActual) <= parseInt(prod.NivelMinimo);
                                     
-                                    {(usuario?.rolId === 1 || usuario?.rolId === 3) && (
-                                        <td className="py-4 px-6 text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <button 
-                                                    onClick={() => abrirModalEditar(prod)}
-                                                    disabled={!prod.Estado}
-                                                    className={`p-2 border rounded-lg transition-all shadow-sm ${
-                                                        prod.Estado 
-                                                            ? 'bg-white border-gray-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200' 
-                                                            : 'bg-gray-50 border-gray-200 text-gray-300 cursor-not-allowed opacity-60'
-                                                    }`}
-                                                    title={prod.Estado ? "Editar Producto" : "Reactivar para editar"}
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
-
-                                                {usuario?.rolId === 1 && (
-                                                    prod.Estado === true ? (
-                                                        <button 
-                                                            onClick={() => pedirConfirmacion(prod.ProductoId, prod.Estado)}
-                                                            className="p-2 bg-white border border-gray-200 rounded-lg text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all shadow-sm"
-                                                            title="Desactivar Producto"
-                                                        >
-                                                            <ArchiveX size={16} />
-                                                        </button>
-                                                    ) : (
-                                                        <button 
-                                                            onClick={() => pedirConfirmacion(prod.ProductoId, prod.Estado)}
-                                                            className="p-2 bg-white border border-gray-200 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 transition-all shadow-sm"
-                                                            title="Reactivar Producto"
-                                                        >
-                                                            <CheckCircle size={16} />
-                                                        </button>
-                                                    )
-                                                )}
+                                    return (
+                                    <tr key={prod.ProductoId} className="hover:bg-gray-50/80 transition-colors">
+                                        <td className="py-4 px-6">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-gray-900">{prod.Nombre}</span>
+                                                <span className="text-xs text-gray-500">{prod.Descripcion}</span>
                                             </div>
                                         </td>
-                                    )}
-                                </tr>
-                            )})}
+                                        <td className="py-4 px-6">
+                                            <div className={`flex items-center gap-1.5 text-sm font-bold ${stockBajo ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                {stockBajo && <AlertTriangle size={16} />}
+                                                {prod.CantidadActual} unds.
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-6">
+                                            <span className="text-sm font-medium text-gray-500">
+                                                {prod.NivelMinimo} unds.
+                                            </span>
+                                        </td>
+                                        <td className="py-4 px-6">
+                                            <span className="text-sm font-medium text-gray-700">
+                                                {prod.Categoria || 'General'}
+                                            </span>
+                                        </td>
+                                        <td className="py-4 px-6">
+                                            <span className="text-sm font-medium text-gray-500">
+                                                {prod.FechaVencimiento ? new Date(prod.FechaVencimiento).toLocaleDateString() : 'N/A'}
+                                            </span>
+                                        </td>
+                                        <td className="py-4 px-6">
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${
+                                                prod.Estado ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200'
+                                            }`}>
+                                                {prod.Estado ? '● Disponible' : '○ Inactivo'}
+                                            </span>
+                                        </td>
+                                        
+                                        {(usuario?.rolId === 1 || usuario?.rolId === 3) && (
+                                            <td className="py-4 px-6 text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <button 
+                                                        onClick={() => abrirModalEditar(prod)}
+                                                        disabled={!prod.Estado}
+                                                        className={`p-2 border rounded-lg transition-all shadow-sm ${
+                                                            prod.Estado 
+                                                                ? 'bg-white border-gray-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200' 
+                                                                : 'bg-gray-50 border-gray-200 text-gray-300 cursor-not-allowed opacity-60'
+                                                        }`}
+                                                        title={prod.Estado ? "Editar Producto" : "Reactivar para editar"}
+                                                    >
+                                                        <Edit2 size={16} />
+                                                    </button>
+
+                                                    {usuario?.rolId === 1 && (
+                                                        prod.Estado === true ? (
+                                                            <button 
+                                                                onClick={() => pedirConfirmacion(prod.ProductoId, prod.Estado)}
+                                                                className="p-2 bg-white border border-gray-200 rounded-lg text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all shadow-sm"
+                                                                title="Desactivar Producto"
+                                                            >
+                                                                <ArchiveX size={16} />
+                                                            </button>
+                                                        ) : (
+                                                            <button 
+                                                                onClick={() => pedirConfirmacion(prod.ProductoId, prod.Estado)}
+                                                                className="p-2 bg-white border border-gray-200 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 transition-all shadow-sm"
+                                                                title="Reactivar Producto"
+                                                            >
+                                                                <CheckCircle size={16} />
+                                                            </button>
+                                                        )
+                                                    )}
+                                                </div>
+                                            </td>
+                                        )}
+                                    </tr>
+                                )})
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -224,14 +337,32 @@ const GestionInventario = () => {
                                 <label className="block text-sm font-semibold text-gray-700 mb-1">Descripción</label>
                                 <input type="text" value={formData.descripcion} onChange={(e) => setFormData({...formData, descripcion: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
                             </div>
+                            
                             <div className="flex gap-4">
                                 <div className="w-1/2">
                                     <label className="block text-sm font-semibold text-gray-700 mb-1">Cant. Actual</label>
-                                    <input type="number" required value={formData.cantidadActual} onChange={(e) => setFormData({...formData, cantidadActual: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
+                                    <input type="number" min="0" required value={formData.cantidadActual} onChange={(e) => setFormData({...formData, cantidadActual: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
                                 </div>
                                 <div className="w-1/2">
                                     <label className="block text-sm font-semibold text-gray-700 mb-1">Nivel Mínimo</label>
-                                    <input type="number" required value={formData.nivelMinimo} onChange={(e) => setFormData({...formData, nivelMinimo: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
+                                    <input type="number" min="0" required value={formData.nivelMinimo} onChange={(e) => setFormData({...formData, nivelMinimo: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4">
+                                <div className="w-1/2">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Categoría</label>
+                                    <select required value={formData.categoria} onChange={(e) => setFormData({...formData, categoria: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all">
+                                        <option value="General">General</option>
+                                        <option value="Analgésico">Analgésico</option>
+                                        <option value="Vacuna">Vacuna</option>
+                                        <option value="Antibiótico">Antibiótico</option>
+                                        <option value="Antiinflamatorio">Antiinflamatorio</option>
+                                    </select>
+                                </div>
+                                <div className="w-1/2">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Vencimiento</label>
+                                    <input type="date" value={formData.fechaVencimiento} onChange={(e) => setFormData({...formData, fechaVencimiento: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
                                 </div>
                             </div>
 

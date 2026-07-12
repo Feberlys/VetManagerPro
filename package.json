@@ -1,23 +1,15 @@
 {
   "name": "vetmanagerpro",
   "version": "1.0.0",
-  "description": "Proyecto: VetManagerPro\r Integrantes:\r M1. Feberlys Batista\r M2, M3. Miguel Guerrero\r M4. Eduardo Beati\r M6. Albert Garcia\r M7, M5. Erick Perez",
-  "main": "index.js",
+  "description": "Proyecto: VetManagerPro",
+  "main": "electron.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "electron": "electron .",
+    "build-exe": "electron-builder"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Feberlys/VetManagerPro.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/Feberlys/VetManagerPro/issues"
-  },
-  "homepage": "https://github.com/Feberlys/VetManagerPro#readme",
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
@@ -30,6 +22,26 @@
     "nodemailer": "^8.0.10"
   },
   "devDependencies": {
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
     "nodemon": "^3.1.14"
+  },
+  "build": {
+    "appId": "com.vetmanager.pro",
+    "productName": "VetManager Pro",
+    "win": {
+      "target": "nsis"
+    },
+    "files": [
+      "**/*",
+      "!dist",
+      "!node_modules/*",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      ".env",
+      "index.js",
+      "src/**/*"
+    ]
   }
 }

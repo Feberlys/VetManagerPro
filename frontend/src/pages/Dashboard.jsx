@@ -30,7 +30,7 @@ const Dashboard = () => {
         cargarDatosDashboard();
     }, []);
 
-    const cargarDatosDashboard = async () => {
+   const cargarDatosDashboard = async () => {
         try {
             const [resMascotas, resCitas, resGuarderia, resProductos] = await Promise.allSettled([
                 api.get('/mascotas'),
@@ -44,7 +44,10 @@ const Dashboard = () => {
             const ocupacion = resGuarderia.status === 'fulfilled' ? resGuarderia.value.data.data || [] : [];
             const productos = resProductos.status === 'fulfilled' ? resProductos.value.data : [];
 
-            // CORRECCIÓN 1: Buscar FechaHora en lugar de Fecha
+            // DIAGNÓSTICO: Si esto imprime un array vacío o con nombres de llaves diferentes, 
+            // sabrás exactamente qué cambiar.
+            console.log("Productos recibidos:", productos);
+
             const citasDeHoy = citas.filter(cita => {
                 if (!cita.FechaHora) return false;
                 const fechaCita = new Date(cita.FechaHora).toDateString();
@@ -52,7 +55,20 @@ const Dashboard = () => {
                 return fechaCita === hoy;
             });
 
-            const bajoStock = productos.filter(p => p.Stock <= (p.StockMinimo || 5));
+            // CORRECCIÓN: Comparar cantidad actual (stock) contra su propio límite mínimo
+           const bajoStock = productos.filter(p => {
+          // Convertimos a minúsculas para evitar errores de case-sensitivity
+    const pMin = Object.keys(p).reduce((acc, key) => {
+        acc[key.toLowerCase()] = p[key];
+        return acc;
+    }, {});
+
+    const stockActual = pMin.stock !== undefined ? Number(pMin.stock) : 0;
+    const limiteMinimo = pMin.stockminimo !== undefined ? Number(pMin.stockminimo) : 5; // Tu valor por defecto si no existe
+
+    // La lógica real: Si la cantidad actual es menor o igual al mínimo permitido
+    return stockActual <= limiteMinimo;
+});
 
             setStats({
                 totalMascotas: mascotas.length || 0,
@@ -61,7 +77,6 @@ const Dashboard = () => {
                 productosBajoStock: bajoStock.length || 0
             });
 
-            // Filtramos para asegurar que mostramos citas recientes/próximas y tomamos las primeras 5
             const citasOrdenadas = citas
                 .filter(c => c.FechaHora && new Date(c.FechaHora) >= new Date(new Date().setHours(0,0,0,0)))
                 .sort((a, b) => new Date(a.FechaHora) - new Date(b.FechaHora))
