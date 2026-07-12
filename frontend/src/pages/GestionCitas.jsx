@@ -20,6 +20,7 @@ const GestionCitas = () => {
   const [productos, setProductos] = useState([]);
   const [mostrarModalVacuna, setMostrarModalVacuna] = useState(false);
   const [citaVacuna, setCitaVacuna] = useState(null);
+  const [citaCancelacionPendiente, setCitaCancelacionPendiente] = useState(null);
 
   const [consultaData, setConsultaData] = useState({
   diagnostico: '',
@@ -120,6 +121,9 @@ const GestionCitas = () => {
   setMostrarModal(true);
 };
   const abrirModalEditar = (cita) => {
+    setError('');
+    setMensaje('');
+
     setModoEdicion(true);
     setFormData({
       id: cita.CitaId,
@@ -186,6 +190,19 @@ const GestionCitas = () => {
       'Error al cambiar el estado de la cita'
     );
   }
+};
+
+ const solicitarCancelacionCita = (cita) => {
+  setError('');
+  setMensaje('');
+  setCitaCancelacionPendiente(cita);
+};
+
+ const confirmarCancelacionCita = async () => {
+  if (!citaCancelacionPendiente) return;
+
+  await cambiarEstadoCita(citaCancelacionPendiente.CitaId, 3);
+  setCitaCancelacionPendiente(null);
 };
 
   const limpiarFiltros = () => {
@@ -485,12 +502,12 @@ const GestionCitas = () => {
                             <CheckCircle size={16} />
                           </button>
                           <button
-                            onClick={() => cambiarEstadoCita(cita.CitaId, 3)}
-                            className="p-2 bg-white border border-gray-200 rounded-lg text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all shadow-sm"
-                            title="Cancelar Cita"
-                          >
-                            <X size={16} />
-                          </button>
+  onClick={() => solicitarCancelacionCita(cita)}
+  className="p-2 bg-white border border-gray-200 rounded-lg text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all shadow-sm"
+  title="Cancelar Cita"
+>
+  <X size={16} />
+</button>
                         </>
                       )}
                     </div>
@@ -825,6 +842,53 @@ const GestionCitas = () => {
           </button>
         </div>
       </form>
+    </div>
+  </div>
+)}{citaCancelacionPendiente && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+      <div className="p-6 border-b border-gray-100 bg-gray-50/50">
+        <h2 className="text-xl font-extrabold text-gray-800">
+          Cancelar cita
+        </h2>
+
+        <p className="text-sm text-gray-500 mt-1">
+          Confirma la acción antes de continuar.
+        </p>
+      </div>
+
+      <div className="p-6">
+        <p className="text-gray-700 text-sm leading-relaxed">
+          ¿Deseas cancelar la cita de{' '}
+          <span className="font-bold text-gray-900">
+            {citaCancelacionPendiente.NombreMascota ||
+              obtenerNombreMascota(citaCancelacionPendiente.MascotaId)}
+          </span>
+          ?
+        </p>
+
+        <div className="mt-4 bg-amber-50 border border-amber-100 text-amber-800 rounded-xl p-4 text-sm">
+          La cita no se eliminará. Solo quedará marcada como cancelada y no podrá ser atendida.
+        </div>
+      </div>
+
+      <div className="p-6 pt-0 flex gap-3">
+        <button
+          type="button"
+          onClick={() => setCitaCancelacionPendiente(null)}
+          className="w-1/2 py-2.5 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+        >
+          Volver
+        </button>
+
+        <button
+          type="button"
+          onClick={confirmarCancelacionCita}
+          className="w-1/2 py-2.5 px-4 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 transition-all shadow-sm"
+        >
+          Cancelar cita
+        </button>
+      </div>
     </div>
   </div>
 )}
