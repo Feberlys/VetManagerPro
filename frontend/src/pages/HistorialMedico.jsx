@@ -206,10 +206,11 @@ const HistorialMedico = () => {
             await buscarHistorialPorMascota(mascotaBuscada);
         }
     } catch (err) {
-        alert(
-            err.response?.data?.error ||
-            'Error al guardar la vacuna.'
-        );
+  setError(
+    err.response?.data?.error ||
+    'Error al guardar la vacuna.'
+  );
+}
     }
 };
 
