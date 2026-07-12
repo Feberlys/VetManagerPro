@@ -9,7 +9,7 @@ import {
     Home, 
     AlertTriangle,
     Package,
-    Users
+    Clock
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -25,12 +25,14 @@ const Dashboard = () => {
     });
 
     const [proximasCitas, setProximasCitas] = useState([]);
+    // NUEVO ESTADO: Para los productos por vencer
+    const [productosPorVencer, setProductosPorVencer] = useState([]);
 
     useEffect(() => {
         cargarDatosDashboard();
     }, []);
 
-   const cargarDatosDashboard = async () => {
+    const cargarDatosDashboard = async () => {
         try {
             const [resMascotas, resCitas, resGuarderia, resProductos] = await Promise.allSettled([
                 api.get('/mascotas'),
@@ -44,10 +46,7 @@ const Dashboard = () => {
             const ocupacion = resGuarderia.status === 'fulfilled' ? resGuarderia.value.data.data || [] : [];
             const productos = resProductos.status === 'fulfilled' ? resProductos.value.data : [];
 
-            // DIAGNÓSTICO: Si esto imprime un array vacío o con nombres de llaves diferentes, 
-            // sabrás exactamente qué cambiar.
-            console.log("Productos recibidos:", productos);
-
+            // 1. Citas de hoy
             const citasDeHoy = citas.filter(cita => {
                 if (!cita.FechaHora) return false;
                 const fechaCita = new Date(cita.FechaHora).toDateString();
@@ -55,28 +54,56 @@ const Dashboard = () => {
                 return fechaCita === hoy;
             });
 
-            // CORRECCIÓN: Comparar cantidad actual (stock) contra su propio límite mínimo
-           const bajoStock = productos.filter(p => {
-          // Convertimos a minúsculas para evitar errores de case-sensitivity
-    const pMin = Object.keys(p).reduce((acc, key) => {
-        acc[key.toLowerCase()] = p[key];
-        return acc;
-    }, {});
+            // 2. Lógica de inventario (Stock y Vencimiento)
+            const hoy = new Date();
+            const en30Dias = new Date();
+            en30Dias.setDate(hoy.getDate() + 30);
 
-    const stockActual = pMin.stock !== undefined ? Number(pMin.stock) : 0;
-    const limiteMinimo = pMin.stockminimo !== undefined ? Number(pMin.stockminimo) : 5; // Tu valor por defecto si no existe
+            const bajoStock = [];
+            const porVencer = [];
 
-    // La lógica real: Si la cantidad actual es menor o igual al mínimo permitido
-    return stockActual <= limiteMinimo;
-});
+            productos.forEach(p => {
+                // Normalizamos las llaves a minúsculas por seguridad
+                const pMin = Object.keys(p).reduce((acc, key) => {
+                    acc[key.toLowerCase()] = p[key];
+                    return acc;
+                }, {});
+
+                // Conteo de bajo stock
+                const stockActual = parseFloat(pMin.cantidadactual || pMin.stock || 0);
+                const limiteMinimo = parseFloat(pMin.nivelminimo || pMin.stockminimo || 5); 
+                if (stockActual <= limiteMinimo) {
+                    bajoStock.push(p);
+                }
+
+                // NUEVO: Evaluación de vencimiento (Solo si está activo y tiene fecha)
+                if (pMin.estado !== false && pMin.fechavencimiento) {
+                    const fechaVenc = new Date(pMin.fechavencimiento);
+                    if (fechaVenc <= en30Dias) {
+                        porVencer.push({
+                            nombre: pMin.nombre,
+                            fecha: fechaVenc,
+                            vencido: fechaVenc < hoy
+                        });
+                    }
+                }
+            });
+
+            // Ordenar los que vencen primero (y tomar solo los 5 más urgentes)
+            const vencimientosOrdenados = porVencer
+                .sort((a, b) => a.fecha - b.fecha)
+                .slice(0, 5);
+
+            setProductosPorVencer(vencimientosOrdenados);
 
             setStats({
                 totalMascotas: mascotas.length || 0,
                 citasHoy: citasDeHoy.length || 0,
                 ocupacionGuarderia: ocupacion.length || 0,
-                productosBajoStock: bajoStock.length || 0
+                productosBajoStock: bajoStock.length
             });
 
+            // 3. Próximas Citas
             const citasOrdenadas = citas
                 .filter(c => c.FechaHora && new Date(c.FechaHora) >= new Date(new Date().setHours(0,0,0,0)))
                 .sort((a, b) => new Date(a.FechaHora) - new Date(b.FechaHora))
@@ -145,47 +172,24 @@ const Dashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <TarjetaStat 
-                    titulo="Pacientes Registrados" 
-                    valor={stats.totalMascotas} 
-                    icono={PawPrint} 
-                    color="bg-emerald-500" 
-                />
-                <TarjetaStat 
-                    titulo="Citas para Hoy" 
-                    valor={stats.citasHoy} 
-                    icono={CalendarClock} 
-                    color="bg-blue-500" 
-                />
-                <TarjetaStat 
-                    titulo="Mascotas en Guardería" 
-                    valor={stats.ocupacionGuarderia} 
-                    icono={Home} 
-                    color="bg-purple-500" 
-                />
-                <TarjetaStat 
-                    titulo="Alertas de Inventario" 
-                    valor={stats.productosBajoStock} 
-                    icono={AlertTriangle} 
-                    color="bg-rose-500" 
-                    alerta={true}
-                />
+                <TarjetaStat titulo="Pacientes Registrados" valor={stats.totalMascotas} icono={PawPrint} color="bg-emerald-500" />
+                <TarjetaStat titulo="Citas para Hoy" valor={stats.citasHoy} icono={CalendarClock} color="bg-blue-500" />
+                <TarjetaStat titulo="Mascotas en Guardería" valor={stats.ocupacionGuarderia} icono={Home} color="bg-purple-500" />
+                <TarjetaStat titulo="Alertas de Inventario" valor={stats.productosBajoStock} icono={AlertTriangle} color="bg-rose-500" alerta={true} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                {/* COLUMNA IZQUIERDA: Citas (Ocupa 2 espacios) */}
+                <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-bold text-gray-800">Próximas Citas</h2>
-                        <button 
-                            onClick={() => navigate('/citas')} 
-                            className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
-                        >
+                        <button onClick={() => navigate('/citas')} className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
                             Ver todas
                         </button>
                     </div>
                     
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto flex-1">
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="text-gray-400 text-xs uppercase tracking-wider border-b border-gray-100">
@@ -206,7 +210,6 @@ const Dashboard = () => {
                                         <tr key={index} className="hover:bg-gray-50 transition-colors">
                                             <td className="py-3 text-sm font-bold text-gray-800">{cita.NombreMascota || 'Desconocido'}</td>
                                             <td className="py-3 text-sm text-gray-600">{cita.Motivo || 'Consulta general'}</td>
-                                            {/* CORRECCIÓN 2: Mostrar la FechaHora con el formato correcto */}
                                             <td className="py-3 text-sm font-medium text-emerald-600">
                                                 {formatearFecha(cita.FechaHora)}
                                             </td>
@@ -218,27 +221,45 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-emerald-600 to-teal-800 rounded-2xl shadow-md p-6 text-white">
-                    <h2 className="text-lg font-bold mb-6 text-emerald-50">Accesos Rápidos</h2>
-                    <div className="space-y-3">
-                        <button 
-                            onClick={() => navigate('/citas')}
-                            className="w-full flex items-center justify-between bg-white/10 hover:bg-white/20 px-4 py-3 rounded-xl transition-all backdrop-blur-sm active:scale-95"
-                        >
-                            <span className="flex items-center gap-3 font-medium"><CalendarClock size={18} /> Nueva Cita</span>
-                        </button>
-                        <button 
-                            onClick={() => navigate('/guarderia')}
-                            className="w-full flex items-center justify-between bg-white/10 hover:bg-white/20 px-4 py-3 rounded-xl transition-all backdrop-blur-sm active:scale-95"
-                        >
-                            <span className="flex items-center gap-3 font-medium"><Home size={18} /> Ingresar a Guardería</span>
-                        </button>
-                        <button 
-                            onClick={() => navigate('/inventario')}
-                            className="w-full flex items-center justify-between bg-white/10 hover:bg-white/20 px-4 py-3 rounded-xl transition-all backdrop-blur-sm active:scale-95"
-                        >
-                            <span className="flex items-center gap-3 font-medium"><Package size={18} /> Registrar Producto</span>
-                        </button>
+                {/* COLUMNA DERECHA: Accesos Rápidos y Vencimientos */}
+                <div className="space-y-6">
+                    {/* Panel de Accesos Rápidos */}
+                    <div className="bg-gradient-to-br from-emerald-600 to-teal-800 rounded-2xl shadow-md p-6 text-white">
+                        <h2 className="text-lg font-bold mb-4 text-emerald-50">Accesos Rápidos</h2>
+                        <div className="space-y-3">
+                            <button onClick={() => navigate('/citas')} className="w-full flex items-center justify-between bg-white/10 hover:bg-white/20 px-4 py-3 rounded-xl transition-all backdrop-blur-sm active:scale-95">
+                                <span className="flex items-center gap-3 font-medium"><CalendarClock size={18} /> Nueva Cita</span>
+                            </button>
+                            <button onClick={() => navigate('/guarderia')} className="w-full flex items-center justify-between bg-white/10 hover:bg-white/20 px-4 py-3 rounded-xl transition-all backdrop-blur-sm active:scale-95">
+                                <span className="flex items-center gap-3 font-medium"><Home size={18} /> Ingresar a Guardería</span>
+                            </button>
+                            <button onClick={() => navigate('/inventario')} className="w-full flex items-center justify-between bg-white/10 hover:bg-white/20 px-4 py-3 rounded-xl transition-all backdrop-blur-sm active:scale-95">
+                                <span className="flex items-center gap-3 font-medium"><Package size={18} /> Registrar Producto</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* NUEVO: Mini Panel de Vencimientos */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                                <Clock size={18} className="text-orange-500" /> Próximos a Vencer
+                            </h2>
+                        </div>
+                        <div className="space-y-3">
+                            {productosPorVencer.length === 0 ? (
+                                <p className="text-sm text-gray-500 text-center py-2">Todo en orden. No hay productos por vencer pronto.</p>
+                            ) : (
+                                productosPorVencer.map((prod, index) => (
+                                    <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                        <span className="text-sm font-semibold text-gray-800 truncate w-3/5">{prod.nombre}</span>
+                                        <span className={`text-xs font-bold px-2 py-1 rounded-md ${prod.vencido ? 'bg-rose-100 text-rose-700' : 'bg-orange-100 text-orange-700'}`}>
+                                            {prod.vencido ? '¡Vencido!' : prod.fecha.toLocaleDateString('es-DO')}
+                                        </span>
+                                    </div>
+                                ))
+                            )}
+                        </div>
                     </div>
                 </div>
 
