@@ -32,7 +32,12 @@ const GestionCitas = () => {
  const [productoSeleccionado, setProductoSeleccionado] = useState('');
  const [busquedaProducto, setBusquedaProducto] = useState('');
  const [mostrarResultadosProductos, setMostrarResultadosProductos] = useState(false);
+
+ const [busquedaProductoVacuna, setBusquedaProductoVacuna] = useState('');
+ const [mostrarResultadosProductosVacuna, setMostrarResultadosProductosVacuna] = useState(false);
+
  const [cantidadProducto, setCantidadProducto] = useState(1);
+ const [guardandoConsulta, setGuardandoConsulta] = useState(false);
 
   const [vacunaData, setVacunaData] = useState({
     nombreVacuna: '',
@@ -97,6 +102,18 @@ const GestionCitas = () => {
   const productosFiltrados = productos
   .filter((producto) => {
     const texto = busquedaProducto.toLowerCase();
+
+    return (
+      producto.Nombre?.toLowerCase().includes(texto) &&
+      Number(producto.CantidadActual) > 0 &&
+      producto.Estado === true
+    );
+  })
+  .sort((a, b) => a.Nombre.localeCompare(b.Nombre));
+
+  const productosVacunaFiltrados = productos
+  .filter((producto) => {
+    const texto = busquedaProductoVacuna.toLowerCase();
 
     return (
       producto.Nombre?.toLowerCase().includes(texto) &&
@@ -225,7 +242,12 @@ const GestionCitas = () => {
     setProductoSeleccionado('');
     setBusquedaProducto('');
     setMostrarResultadosProductos(false);
+
+    setBusquedaProductoVacuna('');
+    setMostrarResultadosProductosVacuna(false);
+
     setCantidadProducto(1);
+    setGuardandoConsulta(false);
 
     setVacunaData({
     nombreVacuna: '',
@@ -276,6 +298,8 @@ const GestionCitas = () => {
  const finalizarConsulta = async (e) => {
   e.preventDefault();
 
+  if (guardandoConsulta) return;
+
   setError('');
   setMensaje('');
 
@@ -298,6 +322,22 @@ const GestionCitas = () => {
       return;
     }
 
+    const producto = productos.find(
+      (item) => Number(item.ProductoId) === Number(productoSeleccionado)
+    );
+
+    if (!producto) {
+      setError('Producto no encontrado.');
+      return;
+    }
+
+    if (cantidad > Number(producto.CantidadActual)) {
+      setError(
+        `No puedes usar ${cantidad} unidades de ${producto.Nombre}. Stock disponible: ${producto.CantidadActual}.`
+      );
+      return;
+    }
+
     productosUsadosFinales = [
       {
         productoId: Number(productoSeleccionado),
@@ -306,7 +346,20 @@ const GestionCitas = () => {
     ];
   }
 
+  if (
+    productoSeleccionado &&
+    vacunaData.productoId &&
+    Number(productoSeleccionado) === Number(vacunaData.productoId)
+  ) {
+    setError(
+      'Ese producto ya está seleccionado como producto utilizado. No lo selecciones también como producto asociado a la vacuna para evitar doble descuento.'
+    );
+    return;
+  }
+
   try {
+    setGuardandoConsulta(true);
+
     await api.post('/historial', {
       mascotaId: Number(citaVacuna.MascotaId),
       citaId: Number(citaVacuna.CitaId),
@@ -319,6 +372,7 @@ const GestionCitas = () => {
     if (vacunaData.nombreVacuna.trim()) {
       if (!vacunaData.fechaAplicacion) {
         setError('Debes indicar la fecha de aplicación de la vacuna.');
+        setGuardandoConsulta(false);
         return;
       }
 
@@ -350,13 +404,20 @@ const GestionCitas = () => {
     setProductoSeleccionado('');
     setBusquedaProducto('');
     setMostrarResultadosProductos(false);
+
+    setBusquedaProductoVacuna('');
+    setMostrarResultadosProductosVacuna(false);
+
     setCantidadProducto(1);
+    setGuardandoConsulta(false);
 
     await cargarDatos();
 
     setMensaje('Consulta registrada y cita atendida correctamente.');
   } catch (err) {
     console.error('Error al finalizar la consulta:', err);
+
+    setGuardandoConsulta(false);
 
     setError(
       err.response?.data?.error ||
@@ -799,27 +860,74 @@ const GestionCitas = () => {
                 Producto asociado a la vacuna
               </label>
 
-              <select
-                value={vacunaData.productoId}
-                onChange={(e) =>
-                  setVacunaData({
-                    ...vacunaData,
-                    productoId: e.target.value
-                  })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
-              >
-                <option value="">Sin producto asociado</option>
+              <div className="relative">
+  <input
+    type="text"
+    value={busquedaProductoVacuna}
+    onChange={(e) => {
+      setBusquedaProductoVacuna(e.target.value);
+      setVacunaData({
+        ...vacunaData,
+        productoId: ''
+      });
+      setMostrarResultadosProductosVacuna(true);
+    }}
+    onFocus={() => setMostrarResultadosProductosVacuna(true)}
+    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
+    placeholder="Buscar producto asociado a la vacuna..."
+  />
 
-                {productos.map((producto) => (
-                  <option
-                    key={producto.ProductoId}
-                    value={producto.ProductoId}
-                  >
-                    {producto.Nombre}
-                  </option>
-                ))}
-              </select>
+  {mostrarResultadosProductosVacuna && busquedaProductoVacuna.trim() && (
+    <div className="absolute z-30 left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden max-h-64 overflow-y-auto">
+      {productosVacunaFiltrados.length === 0 ? (
+        <div className="p-4 text-sm text-gray-500 text-center">
+          No se encontraron productos disponibles.
+        </div>
+      ) : (
+        productosVacunaFiltrados.map((producto) => (
+          <button
+            key={producto.ProductoId}
+            type="button"
+            onClick={() => {
+              setVacunaData({
+                ...vacunaData,
+                productoId: String(producto.ProductoId)
+              });
+              setBusquedaProductoVacuna(`${producto.Nombre} - Stock: ${producto.CantidadActual}`);
+              setMostrarResultadosProductosVacuna(false);
+            }}
+            className="w-full text-left px-4 py-3 hover:bg-emerald-50 border-b border-gray-100 last:border-b-0 transition-colors"
+          >
+            <p className="font-bold text-gray-800">
+              {producto.Nombre}
+            </p>
+
+            <p className="text-xs text-gray-500">
+              Stock disponible: {producto.CantidadActual}
+            </p>
+          </button>
+        ))
+      )}
+    </div>
+  )}
+
+  {vacunaData.productoId && (
+    <button
+      type="button"
+      onClick={() => {
+        setVacunaData({
+          ...vacunaData,
+          productoId: ''
+        });
+        setBusquedaProductoVacuna('');
+        setMostrarResultadosProductosVacuna(false);
+      }}
+      className="mt-2 text-xs font-bold text-rose-600 hover:text-rose-700"
+    >
+      Quitar producto asociado
+    </button>
+  )}
+</div>
             </div>
           </div>
         </div>
@@ -834,12 +942,12 @@ const GestionCitas = () => {
           </button>
 
           <button
-            type="submit"
-            disabled={!consultaData.diagnostico.trim()}
+           type="submit"
+            disabled={!consultaData.diagnostico.trim() || guardandoConsulta}
             className="w-1/2 py-2.5 px-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
-            Finalizar Consulta
-          </button>
+           {guardandoConsulta ? 'Guardando...' : 'Finalizar Consulta'}         
+            </button>
         </div>
       </form>
     </div>
