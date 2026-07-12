@@ -99,19 +99,35 @@ const editarMascota = async (req, res) => {
   }
 };
 
-const desactivarMascota = async (req, res) => {
+const cambiarEstadoMascota = async (req, res) => {
   try {
     const { id } = req.params;
-    const desactivada = await mascotaModel.cambiarEstadoMascota(id, 0);
+    const { estado } = req.body;
 
-    if (desactivada) {
-      res.status(200).json({ mensaje: 'Mascota desactivada con éxito' });
+    if (typeof estado !== 'boolean') {
+      return res.status(400).json({
+        error: 'El estado debe ser true o false'
+      });
+    }
+
+    const actualizada = await mascotaModel.cambiarEstadoMascota(id, estado);
+
+    if (actualizada) {
+      res.status(200).json({
+        mensaje: estado
+          ? 'Mascota activada con éxito'
+          : 'Mascota inactivada con éxito'
+      });
     } else {
-      res.status(404).json({ error: 'Mascota no encontrada' });
+      res.status(404).json({
+        error: 'Mascota no encontrada'
+      });
     }
   } catch (error) {
-    console.error('Error al desactivar mascota:', error);
-    res.status(500).json({ error: 'Hubo un error al desactivar la mascota' });
+    console.error('Error al cambiar estado de mascota:', error);
+    res.status(500).json({
+      error: 'Hubo un error al cambiar el estado de la mascota'
+    });
   }
 };
 
@@ -122,5 +138,5 @@ module.exports = {
   buscarMascotas,
   crearMascota,
   editarMascota,
-  desactivarMascota
+  cambiarEstadoMascota
 };

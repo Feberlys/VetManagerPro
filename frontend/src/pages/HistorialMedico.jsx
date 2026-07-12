@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import {
@@ -11,6 +12,7 @@ import {
 
 const HistorialMedico = () => {
     const { usuario } = useContext(AuthContext);
+    const navigate = useNavigate();
     const esVeterinario = usuario?.rolId === 2;
 
     const [mascotaId, setMascotaId] = useState('');
@@ -30,14 +32,6 @@ const HistorialMedico = () => {
     const [tabActiva, setTabActiva] = useState('consultas');
     const [cargando, setCargando] = useState(false);
     const [error, setError] = useState('');
-
-    const [modalConsulta, setModalConsulta] = useState(false);
-    const [formConsulta, setFormConsulta] = useState({
-        diagnostico: '', tratamiento: '', notasAdicionales: '', citaId: ''
-    });
-    const [productosAgregados, setProductosAgregados] = useState([]);
-    const [productoSeleccionado, setProductoSeleccionado] = useState('');
-    const [cantidadProducto, setCantidadProducto] = useState(1);
 
     const [modalVacuna, setModalVacuna] = useState(false);
     const [formVacuna, setFormVacuna] = useState({
@@ -182,70 +176,6 @@ const HistorialMedico = () => {
 };
 
 
-    const agregarProducto = () => {
-        if (!productoSeleccionado || cantidadProducto <= 0) return;
-        const prod = productos.find(p => p.ProductoId === parseInt(productoSeleccionado));
-        if (!prod) return;
-        if (productosAgregados.some(p => p.productoId === prod.ProductoId)) {
-            alert('Ese producto ya está en la lista.');
-            return;
-        }
-        setProductosAgregados([...productosAgregados, {
-            productoId: prod.ProductoId,
-            nombre: prod.Nombre,
-            cantidad: parseInt(cantidadProducto),
-            stock: prod.CantidadActual
-        }]);
-        setProductoSeleccionado('');
-        setCantidadProducto(1);
-    };
-
-    const quitarProducto = (productoId) => {
-        setProductosAgregados(productosAgregados.filter(p => p.productoId !== productoId));
-    };
-
-    const guardarConsulta = async (e) => {
-    e.preventDefault();
-
-    try {
-        await api.post('/historial', {
-            mascotaId: Number(mascotaId),
-            citaId: formConsulta.citaId
-                ? Number(formConsulta.citaId)
-                : null,
-            diagnostico: formConsulta.diagnostico,
-            tratamiento: formConsulta.tratamiento,
-            notasAdicionales: formConsulta.notasAdicionales,
-            productosUsados: productosAgregados.map((producto) => ({
-                productoId: producto.productoId,
-                cantidad: producto.cantidad
-            }))
-        });
-
-        setModalConsulta(false);
-
-        setFormConsulta({
-            diagnostico: '',
-            tratamiento: '',
-            notasAdicionales: '',
-            citaId: ''
-        });
-
-        setProductosAgregados([]);
-
-        await cargarDatosIniciales();
-
-        if (mascotaBuscada) {
-            await buscarHistorialPorMascota(mascotaBuscada);
-        }
-    } catch (err) {
-        alert(
-            err.response?.data?.error ||
-            'Error al guardar la consulta.'
-        );
-    }
-};
-
     const guardarVacuna = async (e) => {
     e.preventDefault();
 
@@ -276,10 +206,11 @@ const HistorialMedico = () => {
             await buscarHistorialPorMascota(mascotaBuscada);
         }
     } catch (err) {
-        alert(
-            err.response?.data?.error ||
-            'Error al guardar la vacuna.'
-        );
+  setError(
+    err.response?.data?.error ||
+    'Error al guardar la vacuna.'
+  );
+}
     }
 };
 
@@ -481,14 +412,20 @@ const HistorialMedico = () => {
                                 </div>
 
                                 {esVeterinario && (
-                                    <button
-                                        onClick={() => tabActiva === 'consultas' ? setModalConsulta(true) : setModalVacuna(true)}
-                                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 mb-2"
-                                    >
-                                        <Plus size={18} />
-                                        {tabActiva === 'consultas' ? 'Nueva Consulta' : 'Registrar Vacuna'}
-                                    </button>
-                                )}
+    <button
+        onClick={() => {
+            if (tabActiva === 'consultas') {
+                navigate('/citas');
+            } else {
+                setModalVacuna(true);
+            }
+        }}
+        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 mb-2"
+    >
+        <Plus size={18} />
+        {tabActiva === 'consultas' ? 'Ir a Citas' : 'Registrar Vacuna'}
+    </button>
+)}
                             </div>
 
                             <div className="p-6 md:p-8">
@@ -618,114 +555,6 @@ const HistorialMedico = () => {
                             </div>
                         </div>
                     </>
-                )}
-
-                {modalConsulta && (
-                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
-                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto anim-in">
-                            <div className="flex items-center justify-between p-6 border-b border-gray-100 sticky top-0 bg-white/90 backdrop-blur-md rounded-t-3xl z-10">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-center">
-                                        <Stethoscope size={20} className="text-emerald-600" />
-                                    </div>
-                                    <h2 className="text-xl font-extrabold text-gray-900">Nueva Consulta</h2>
-                                </div>
-                                <button onClick={() => setModalConsulta(false)} className="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 p-2 rounded-full transition-colors">
-                                    <X size={20} />
-                                </button>
-                            </div>
-
-                            <form onSubmit={guardarConsulta} className="p-6 space-y-5">
-                                <div>
-                                    <label className="text-sm font-bold text-gray-700 block mb-1.5">Diagnóstico *</label>
-                                    <textarea
-                                        value={formConsulta.diagnostico}
-                                        onChange={e => setFormConsulta({ ...formConsulta, diagnostico: e.target.value })}
-                                        required rows={2}
-                                        className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none transition-all"
-                                        placeholder="Describe el diagnóstico detallado..."
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-sm font-bold text-gray-700 block mb-1.5">Tratamiento</label>
-                                    <textarea
-                                        value={formConsulta.tratamiento}
-                                        onChange={e => setFormConsulta({ ...formConsulta, tratamiento: e.target.value })}
-                                        rows={2}
-                                        className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none transition-all"
-                                        placeholder="Medicamentos, dosis, indicaciones..."
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-sm font-bold text-gray-700 block mb-1.5">Notas adicionales</label>
-                                    <textarea
-                                        value={formConsulta.notasAdicionales}
-                                        onChange={e => setFormConsulta({ ...formConsulta, notasAdicionales: e.target.value })}
-                                        rows={2}
-                                        className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none transition-all"
-                                        placeholder="Observaciones de seguimiento..."
-                                    />
-                                </div>
-
-                                <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100">
-                                    <label className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-3">
-                                        <Package size={16} className="text-emerald-600" /> Descontar del Inventario (Opcional)
-                                    </label>
-                                    <div className="flex gap-2 mb-3">
-                                        <select
-                                            value={productoSeleccionado}
-                                            onChange={e => setProductoSeleccionado(e.target.value)}
-                                            className="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-                                        >
-                                            <option value="">Selecciona un producto...</option>
-                                            {productos.map(p => (
-                                                <option key={p.ProductoId} value={p.ProductoId}>
-                                                    {p.Nombre} (Stock: {p.CantidadActual})
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <input
-                                            type="number" min="1" value={cantidadProducto}
-                                            onChange={e => setCantidadProducto(parseInt(e.target.value) || 1)}
-                                            className="w-20 border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-center transition-all"
-                                        />
-                                        <button
-                                            type="button" onClick={agregarProducto} disabled={!productoSeleccionado}
-                                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2.5 rounded-xl text-sm font-bold disabled:opacity-50 disabled:bg-gray-400 transition-all shadow-sm"
-                                        >
-                                            <Plus size={18} />
-                                        </button>
-                                    </div>
-                                    {productosAgregados.length > 0 && (
-                                        <div className="space-y-2 mt-4">
-                                            {productosAgregados.map(p => (
-                                                <div key={p.productoId} className="flex items-center justify-between bg-white border border-emerald-100 rounded-xl px-4 py-2.5 text-sm shadow-sm">
-                                                    <span className="text-emerald-900 font-bold flex items-center gap-2">
-                                                        <Pill size={14} className="text-emerald-500" /> {p.nombre}
-                                                    </span>
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="bg-emerald-50 text-emerald-700 px-2 py-1 rounded-lg font-bold text-xs">x{p.cantidad}</span>
-                                                        <button type="button" onClick={() => quitarProducto(p.productoId)} className="text-rose-400 hover:text-rose-600 transition-colors bg-rose-50 hover:bg-rose-100 p-1.5 rounded-lg">
-                                                            <X size={14} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex gap-3 pt-4">
-                                    <button type="button" onClick={() => setModalConsulta(false)} className="w-1/2 border border-gray-300 text-gray-700 px-4 py-3 rounded-xl text-sm font-bold hover:bg-gray-50 transition-colors">
-                                        Cancelar
-                                    </button>
-                                    <button type="submit" className="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-xl text-sm font-bold transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">
-                                        Guardar Consulta
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
                 )}
 
                 {modalVacuna && (
