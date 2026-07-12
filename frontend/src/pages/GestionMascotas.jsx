@@ -112,8 +112,11 @@ const GestionMascotas = () => {
       setMostrarModal(false);
       cargarDatos();
     } catch (err) {
-      alert(err.response?.data?.error || 'Error al guardar la mascota');
-    }
+  setError(
+    err.response?.data?.error ||
+    'Error al guardar la mascota'
+  );
+}
   };
 
   const solicitarCambioEstadoMascota = (mascota) => {
