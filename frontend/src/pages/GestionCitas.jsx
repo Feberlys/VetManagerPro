@@ -14,6 +14,7 @@ const GestionCitas = () => {
   const [mascotas, setMascotas] = useState([]);
   const [veterinarios, setVeterinarios] = useState([]);
   const [error, setError] = useState('');
+  const [mensaje, setMensaje] = useState('');
   const [mostrarModal, setMostrarModal] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [productos, setProductos] = useState([]);
@@ -27,8 +28,10 @@ const GestionCitas = () => {
   productosUsados: []
 });
 
-  const [productoSeleccionado, setProductoSeleccionado] = useState('');
-  const [cantidadProducto, setCantidadProducto] = useState(1);
+ const [productoSeleccionado, setProductoSeleccionado] = useState('');
+ const [busquedaProducto, setBusquedaProducto] = useState('');
+ const [mostrarResultadosProductos, setMostrarResultadosProductos] = useState(false);
+ const [cantidadProducto, setCantidadProducto] = useState(1);
 
   const [vacunaData, setVacunaData] = useState({
     nombreVacuna: '',
@@ -56,7 +59,13 @@ const GestionCitas = () => {
 
       setCitas(citasRes.data);
       setMascotas(mascotasRes.data);
-      setProductos(productosRes.data);
+      setProductos(
+      productosRes.data.filter(
+      (producto) =>
+      producto.Estado === true &&
+      Number(producto.CantidadActual) > 0
+  )
+);
 
       try {
         const usuariosRes = await api.get('/usuarios/veterinarios');
@@ -84,12 +93,32 @@ const GestionCitas = () => {
     return coincideEstado && coincideMes && coincideAnio && coincideSemana;
   });
 
-  const abrirModalCrear = () => {
-    setModoEdicion(false);
-    setFormData({ id: null, mascotaId: '', veterinarioId: '', fechaHora: '', motivo: '', estadoCitaId: 1 });
-    setMostrarModal(true);
-  };
+  const productosFiltrados = productos
+  .filter((producto) => {
+    const texto = busquedaProducto.toLowerCase();
 
+    return (
+      producto.Nombre?.toLowerCase().includes(texto) &&
+      Number(producto.CantidadActual) > 0 &&
+      producto.Estado === true
+    );
+  })
+  .sort((a, b) => a.Nombre.localeCompare(b.Nombre));
+
+  const abrirModalCrear = () => {
+  setError('');
+  setMensaje('');
+  setModoEdicion(false);
+  setFormData({
+    id: null,
+    mascotaId: '',
+    veterinarioId: '',
+    fechaHora: '',
+    motivo: '',
+    estadoCitaId: 1
+  });
+  setMostrarModal(true);
+};
   const abrirModalEditar = (cita) => {
     setModoEdicion(true);
     setFormData({
@@ -139,20 +168,35 @@ const GestionCitas = () => {
   };
 
   const cambiarEstadoCita = async (citaId, estadoCitaId) => {
-    try {
-      await api.patch(`/citas/${citaId}/estado`, { estadoCitaId });
-      cargarDatos();
-    } catch (err) {
-      alert(err.response?.data?.error || 'Error al cambiar el estado de la cita');
-    }
-  };
+  setError('');
+  setMensaje('');
+
+  try {
+    await api.patch(`/citas/${citaId}/estado`, { estadoCitaId });
+    await cargarDatos();
+
+    setMensaje(
+      Number(estadoCitaId) === 3
+        ? 'Cita cancelada correctamente.'
+        : 'Estado de la cita actualizado correctamente.'
+    );
+  } catch (err) {
+    setError(
+      err.response?.data?.error ||
+      'Error al cambiar el estado de la cita'
+    );
+  }
+};
 
   const limpiarFiltros = () => {
     setFiltroEstado('todas'); setFiltroMes(''); setFiltroAnio(''); setFiltroSemana('');
   };
 
   const abrirModalVacuna = (cita) => {
+    setError('');
+    setMensaje('');
     setCitaVacuna(cita);
+
 
     setConsultaData({
     diagnostico: '',
@@ -162,6 +206,8 @@ const GestionCitas = () => {
   });
 
     setProductoSeleccionado('');
+    setBusquedaProducto('');
+    setMostrarResultadosProductos(false);
     setCantidadProducto(1);
 
     setVacunaData({
@@ -175,117 +221,87 @@ const GestionCitas = () => {
 };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        mascotaId: Number(formData.mascotaId), veterinarioId: Number(formData.veterinarioId), fechaHora: formData.fechaHora, motivo: formData.motivo
-      };
-      if (modoEdicion) {
-        await api.patch(`/citas/${formData.id}/reprogramar`, { fechaHora: formData.fechaHora });
-      } else {
-        await api.post('/citas', payload);
-      }
-      setMostrarModal(false); cargarDatos();
-    } catch (err) {
-      alert(err.response?.data?.error || 'Error al guardar la cita');
-    }
-  };
-
-  const agregarProductoConsulta = () => {
-  if (!productoSeleccionado) {
-    alert('Selecciona un producto.');
-    return;
-  }
-
-  const cantidad = Number(cantidadProducto);
-
-  if (!Number.isInteger(cantidad) || cantidad <= 0) {
-    alert('La cantidad debe ser mayor que 0.');
-    return;
-  }
-
-  const producto = productos.find(
-    (item) => Number(item.ProductoId) === Number(productoSeleccionado)
-  );
-
-  if (!producto) {
-    alert('Producto no encontrado.');
-    return;
-  }
-
-  const productoExistente = consultaData.productosUsados.find(
-    (item) => Number(item.productoId) === Number(productoSeleccionado)
-  );
-
-  if (productoExistente) {
-    setConsultaData((prev) => ({
-      ...prev,
-      productosUsados: prev.productosUsados.map((item) =>
-        Number(item.productoId) === Number(productoSeleccionado)
-          ? {
-              ...item,
-              cantidad: item.cantidad + cantidad
-            }
-          : item
-      )
-    }));
-  } else {
-    setConsultaData((prev) => ({
-      ...prev,
-      productosUsados: [
-        ...prev.productosUsados,
-        {
-          productoId: Number(producto.ProductoId),
-          nombre: producto.Nombre,
-          cantidad
-        }
-      ]
-    }));
-  }
-
-  setProductoSeleccionado('');
-  setCantidadProducto(1);
-};
-
-const eliminarProductoConsulta = (productoId) => {
-  setConsultaData((prev) => ({
-    ...prev,
-    productosUsados: prev.productosUsados.filter(
-      (item) => Number(item.productoId) !== Number(productoId)
-    )
-  }));
-};
-
-const finalizarConsulta = async (e) => {
   e.preventDefault();
+
+  setError('');
+  setMensaje('');
+
+  try {
+    const payload = {
+      mascotaId: Number(formData.mascotaId),
+      veterinarioId: Number(formData.veterinarioId),
+      fechaHora: formData.fechaHora,
+      motivo: formData.motivo
+    };
+
+    if (modoEdicion) {
+      await api.patch(`/citas/${formData.id}/reprogramar`, {
+        fechaHora: formData.fechaHora
+      });
+
+      setMensaje('Cita reprogramada correctamente.');
+    } else {
+      await api.post('/citas', payload);
+
+      setMensaje('Cita creada correctamente.');
+    }
+
+    setMostrarModal(false);
+    await cargarDatos();
+  } catch (err) {
+    setError(
+      err.response?.data?.error ||
+      'Error al guardar la cita'
+    );
+  }
+};
+
+ const finalizarConsulta = async (e) => {
+  e.preventDefault();
+
+  setError('');
+  setMensaje('');
 
   if (!citaVacuna) {
     return;
   }
 
   if (!consultaData.diagnostico.trim()) {
-    alert('El diagnóstico es obligatorio.');
+    setError('El diagnóstico es obligatorio.');
     return;
   }
 
+  let productosUsadosFinales = [];
+
+  if (productoSeleccionado) {
+    const cantidad = Number(cantidadProducto);
+
+    if (!Number.isInteger(cantidad) || cantidad <= 0) {
+      setError('La cantidad del producto debe ser mayor que 0.');
+      return;
+    }
+
+    productosUsadosFinales = [
+      {
+        productoId: Number(productoSeleccionado),
+        cantidad
+      }
+    ];
+  }
+
   try {
-    // 1. Registrar la consulta médica
     await api.post('/historial', {
       mascotaId: Number(citaVacuna.MascotaId),
       citaId: Number(citaVacuna.CitaId),
       diagnostico: consultaData.diagnostico.trim(),
       tratamiento: consultaData.tratamiento.trim() || null,
       notasAdicionales: consultaData.notasAdicionales.trim() || null,
-      productosUsados: consultaData.productosUsados.map((producto) => ({
-        productoId: Number(producto.productoId),
-        cantidad: Number(producto.cantidad)
-      }))
+      productosUsados: productosUsadosFinales
     });
 
-    // 2. Registrar vacuna solamente si fue indicada
     if (vacunaData.nombreVacuna.trim()) {
       if (!vacunaData.fechaAplicacion) {
-        alert('Debes indicar la fecha de aplicación de la vacuna.');
+        setError('Debes indicar la fecha de aplicación de la vacuna.');
         return;
       }
 
@@ -300,7 +316,6 @@ const finalizarConsulta = async (e) => {
       });
     }
 
-    // 3. Marcar la cita como atendida
     await api.patch(`/citas/${citaVacuna.CitaId}/estado`, {
       estadoCitaId: 2
     });
@@ -315,13 +330,18 @@ const finalizarConsulta = async (e) => {
       productosUsados: []
     });
 
-    cargarDatos();
+    setProductoSeleccionado('');
+    setBusquedaProducto('');
+    setMostrarResultadosProductos(false);
+    setCantidadProducto(1);
 
-    alert('Consulta registrada y cita atendida correctamente.');
+    await cargarDatos();
+
+    setMensaje('Consulta registrada y cita atendida correctamente.');
   } catch (err) {
     console.error('Error al finalizar la consulta:', err);
 
-    alert(
+    setError(
       err.response?.data?.error ||
       err.response?.data?.detalle ||
       'Error al registrar la consulta médica'
@@ -401,6 +421,21 @@ const finalizarConsulta = async (e) => {
           <p className="font-medium">{error}</p>
         </div>
       )}
+
+      {mensaje && (
+  <div className="bg-emerald-50 border-l-4 border-emerald-500 text-emerald-700 p-4 mb-6 rounded-r-md flex items-center gap-2 shadow-sm">
+    <CheckCircle size={20} />
+    <p className="font-medium">{mensaje}</p>
+
+    <button
+      type="button"
+      onClick={() => setMensaje('')}
+      className="ml-auto text-emerald-700 hover:text-emerald-900 font-bold"
+    >
+      <X size={18} />
+    </button>
+  </div>
+)}
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
@@ -612,74 +647,67 @@ const finalizarConsulta = async (e) => {
             Productos utilizados
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px_auto] gap-3">
-            <select
-              value={productoSeleccionado}
-              onChange={(e) => setProductoSeleccionado(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
-            >
-              <option value="">Seleccione un producto</option>
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3">
+  <div className="relative">
+    <input
+      type="text"
+      value={busquedaProducto}
+      onChange={(e) => {
+        setBusquedaProducto(e.target.value);
+        setProductoSeleccionado('');
+        setMostrarResultadosProductos(true);
+      }}
+      onFocus={() => setMostrarResultadosProductos(true)}
+      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
+      placeholder="Buscar producto utilizado..."
+    />
 
-              {productos.map((producto) => (
-                <option
-                  key={producto.ProductoId}
-                  value={producto.ProductoId}
-                >
-                  {producto.Nombre} - Stock: {producto.CantidadActual}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="number"
-              min="1"
-              step="1"
-              value={cantidadProducto}
-              onChange={(e) => setCantidadProducto(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
-              placeholder="Cantidad"
-            />
-
-            <button
-              type="button"
-              onClick={agregarProductoConsulta}
-              className="px-4 py-2 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition-colors"
-            >
-              Agregar
-            </button>
+    {mostrarResultadosProductos && busquedaProducto.trim() && (
+      <div className="absolute z-30 left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden max-h-64 overflow-y-auto">
+        {productosFiltrados.length === 0 ? (
+          <div className="p-4 text-sm text-gray-500 text-center">
+            No se encontraron productos disponibles.
           </div>
+        ) : (
+          productosFiltrados.map((producto) => (
+            <button
+              key={producto.ProductoId}
+              type="button"
+              onClick={() => {
+                setProductoSeleccionado(String(producto.ProductoId));
+                setBusquedaProducto(`${producto.Nombre} - Stock: ${producto.CantidadActual}`);
+                setMostrarResultadosProductos(false);
+              }}
+              className="w-full text-left px-4 py-3 hover:bg-emerald-50 border-b border-gray-100 last:border-b-0 transition-colors"
+            >
+              <p className="font-bold text-gray-800">
+                {producto.Nombre}
+              </p>
 
-          {consultaData.productosUsados.length > 0 && (
-            <div className="mt-4 space-y-2">
-              {consultaData.productosUsados.map((producto) => (
-                <div
-                  key={producto.productoId}
-                  className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-xl px-4 py-3"
-                >
-                  <div>
-                    <p className="font-bold text-gray-800">
-                      {producto.nombre}
-                    </p>
+              <p className="text-xs text-gray-500">
+                Stock disponible: {producto.CantidadActual}
+              </p>
+            </button>
+          ))
+        )}
+      </div>
+    )}
+  </div>
 
-                    <p className="text-sm text-gray-500">
-                      Cantidad utilizada: {producto.cantidad}
-                    </p>
-                  </div>
+  <input
+    type="number"
+    min="1"
+    step="1"
+    value={cantidadProducto}
+    onChange={(e) => setCantidadProducto(e.target.value)}
+    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
+    placeholder="Cantidad"
+  />
+</div>
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      eliminarProductoConsulta(producto.productoId)
-                    }
-                    className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg"
-                    title="Eliminar producto"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+<p className="text-xs text-gray-500 mt-2">
+  Si seleccionas un producto, se descontará automáticamente al finalizar la consulta.
+</p>
         </div>
 
         <div className="border-t border-gray-100 pt-6">
