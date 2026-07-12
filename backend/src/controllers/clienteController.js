@@ -76,10 +76,43 @@ const editarCliente = async (req, res) => {
   }
 };
 
+const cambiarEstadoCliente = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { estado } = req.body;
+
+    if (typeof estado !== 'boolean') {
+      return res.status(400).json({
+        error: 'El estado debe ser true o false'
+      });
+    }
+
+    const actualizado = await clienteModel.cambiarEstadoCliente(id, estado);
+
+    if (actualizado) {
+      res.status(200).json({
+        mensaje: estado
+          ? 'Cliente activado con éxito'
+          : 'Cliente inactivado con éxito'
+      });
+    } else {
+      res.status(404).json({
+        error: 'Cliente no encontrado'
+      });
+    }
+  } catch (error) {
+    console.error('Error al cambiar estado del cliente:', error);
+    res.status(500).json({
+      error: 'Hubo un error al cambiar el estado del cliente'
+    });
+  }
+};
+
 module.exports = {
   listarClientes,
   obtenerCliente,
   buscarClientes,
   crearCliente,
   editarCliente,
+  cambiarEstadoCliente
 };
