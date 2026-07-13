@@ -213,6 +213,7 @@ const hacerCheckOut = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // 1. Obtener los datos del hospedaje activo
     const hospedaje = await guarderiaModel.getHospedajeById(Number(id));
 
     if (!hospedaje) {
@@ -232,40 +233,50 @@ const hacerCheckOut = async (req, res) => {
     const fechaEntrada = new Date(hospedaje.FechaEntrada);
     const fechaSalidaReal = new Date();
 
+    // 2. Cálculo exacto de noches (Mínimo 1 noche si es el mismo día)
     const diferenciaMs = fechaSalidaReal - fechaEntrada;
     const noches = Math.max(1, Math.ceil(diferenciaMs / (1000 * 60 * 60 * 24)));
+    const precioPorNoche = Number(hospedaje.PrecioPorNoche);
+    const totalCobrar = noches * precioPorNoche;
 
-    const totalCobrar = noches * Number(hospedaje.PrecioPorNoche);
-
+    // 3. Registrar el check-out en la Base de Datos
     const checkout = await guarderiaModel.hacerCheckOut(
       Number(id),
       fechaSalidaReal,
       totalCobrar
     );
 
+    // 4. Envío del correo unificado con desglose detallado
     try {
-    await emailService.enviarCorreoRecogida(
-      hospedaje.Correo,
-      hospedaje.NombreCliente,
-      hospedaje.NombreMascota,
-      totalCobrar
-    );
+      // Le pasamos noches y precio por noche para que el template del email pueda armar un recibo limpio
+      await emailService.enviarCorreoRecogida(
+        hospedaje.Correo,
+        hospedaje.NombreCliente,
+        hospedaje.NombreMascota,
+        totalCobrar,
+        noches,
+        precioPorNoche
+      );
 
-    console.log(`📧 Correo enviado a ${hospedaje.Correo}`);
-  } catch (emailError) {
-    console.error('Error enviando correo:', emailError.message);
-  }
+      console.log(`📧 Correo de check-out enviado a ${hospedaje.Correo}`);
+    } catch (emailError) {
+      // Capturamos el error sin tumbar la respuesta HTTP del cliente
+      console.error('⚠️ Error al enviar el correo de check-out:', emailError.message);
+    }
 
+    // 5. Respuesta exitosa al Frontend
     res.json({
       success: true,
       message: 'Check-out realizado correctamente.',
       data: {
         ...checkout,
         noches,
+        precioPorNoche,
         totalCobrar
       }
     });
   } catch (error) {
+    console.error('ERROR CHECK-OUT:', error);
     res.status(500).json({
       success: false,
       message: 'Error al realizar el check-out.',
