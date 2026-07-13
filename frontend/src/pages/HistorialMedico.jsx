@@ -1,15 +1,18 @@
 import { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import {
     Stethoscope, Search, Plus, X, ClipboardList, Syringe,
-    Package, AlertTriangle, Calendar, User, Pill, PawPrint,
-    Activity, ShieldCheck, Clock, FileText, CalendarCheck
+    AlertTriangle, Calendar, User, Pill, PawPrint,
+    Activity, ShieldCheck, Clock, FileText, CalendarCheck,
+    ExternalLink
 } from 'lucide-react';
 
 const HistorialMedico = () => {
     const { usuario } = useContext(AuthContext);
     const esVeterinario = usuario?.rolId === 2;
+    const navigate = useNavigate();
 
     // Búsqueda de mascota
     const [mascotaId, setMascotaId] = useState('');
@@ -24,15 +27,6 @@ const HistorialMedico = () => {
     const [tabActiva, setTabActiva] = useState('consultas');
     const [cargando, setCargando]   = useState(false);
     const [error, setError]         = useState('');
-
-    // Modal consulta
-    const [modalConsulta, setModalConsulta]         = useState(false);
-    const [formConsulta, setFormConsulta]            = useState({
-        diagnostico: '', tratamiento: '', notasAdicionales: '', citaId: ''
-    });
-    const [productosAgregados, setProductosAgregados]     = useState([]);
-    const [productoSeleccionado, setProductoSeleccionado] = useState('');
-    const [cantidadProducto, setCantidadProducto]         = useState(1);
 
     // Modal vacuna
     const [modalVacuna, setModalVacuna] = useState(false);
@@ -70,58 +64,6 @@ const HistorialMedico = () => {
             setMascotaBuscada(null);
         } finally {
             setCargando(false);
-        }
-    };
-
-    const agregarProducto = () => {
-        if (!productoSeleccionado || cantidadProducto <= 0) return;
-        const prod = productos.find(p => p.ProductoId === parseInt(productoSeleccionado));
-        if (!prod) return;
-        if (productosAgregados.some(p => p.productoId === prod.ProductoId)) {
-            alert('Ese producto ya está en la lista.');
-            return;
-        }
-        setProductosAgregados([...productosAgregados, {
-            productoId: prod.ProductoId,
-            nombre: prod.Nombre,
-            cantidad: parseInt(cantidadProducto),
-            stock: prod.CantidadActual
-        }]);
-        setProductoSeleccionado('');
-        setCantidadProducto(1);
-    };
-
-    const quitarProducto = (productoId) => {
-        setProductosAgregados(productosAgregados.filter(p => p.productoId !== productoId));
-    };
-
-    // Abre el modal de consulta, opcionalmente pre-cargando un CitaId
-    const abrirModalConsulta = (citaId = '') => {
-        setFormConsulta({ diagnostico: '', tratamiento: '', notasAdicionales: '', citaId: citaId ? String(citaId) : '' });
-        setProductosAgregados([]);
-        setModalConsulta(true);
-    };
-
-    const guardarConsulta = async (e) => {
-        e.preventDefault();
-        try {
-            await api.post('/historial', {
-                mascotaId: parseInt(mascotaId),
-                citaId: formConsulta.citaId ? parseInt(formConsulta.citaId) : null,
-                diagnostico: formConsulta.diagnostico,
-                tratamiento: formConsulta.tratamiento,
-                notasAdicionales: formConsulta.notasAdicionales,
-                productosUsados: productosAgregados.map(p => ({
-                    productoId: p.productoId, cantidad: p.cantidad
-                }))
-            });
-            setModalConsulta(false);
-            setFormConsulta({ diagnostico: '', tratamiento: '', notasAdicionales: '', citaId: '' });
-            setProductosAgregados([]);
-            cargarProductos();
-            buscarHistorial();
-        } catch (err) {
-            alert(err.response?.data?.error || 'Error al guardar la consulta.');
         }
     };
 
@@ -164,8 +106,8 @@ const HistorialMedico = () => {
         const hoy = new Date();
         const proxima = new Date(fechaProximaDosis);
         const dias = Math.ceil((proxima - hoy) / (1000 * 60 * 60 * 24));
-        if (dias < 0)   return { label: 'Vencida',           classes: 'bg-red-50 text-red-600',     dot: 'bg-red-500' };
-        if (dias <= 30) return { label: `Vence en ${dias}d`, classes: 'bg-amber-50 text-amber-600', dot: 'bg-amber-500' };
+        if (dias < 0)   return { label: 'Vencida',           classes: 'bg-red-50 text-red-600',        dot: 'bg-red-500' };
+        if (dias <= 30) return { label: `Vence en ${dias}d`, classes: 'bg-amber-50 text-amber-600',    dot: 'bg-amber-500' };
         return           { label: 'Al día',                  classes: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500' };
     };
 
@@ -289,11 +231,14 @@ const HistorialMedico = () => {
 
                             {esVeterinario && (
                                 <button
-                                    onClick={() => tabActiva === 'consultas' ? abrirModalConsulta() : setModalVacuna(true)}
+                                    onClick={() => tabActiva === 'consultas' ? navigate('/citas') : setModalVacuna(true)}
                                     className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors mb-2 shadow-sm"
                                 >
-                                    <Plus size={16} />
-                                    {tabActiva === 'consultas' ? 'Nueva Consulta' : 'Registrar Vacuna'}
+                                    {tabActiva === 'consultas' ? (
+                                        <><ExternalLink size={16} /> Ir a Citas</>
+                                    ) : (
+                                        <><Plus size={16} /> Registrar Vacuna</>
+                                    )}
                                 </button>
                             )}
                         </div>
@@ -305,6 +250,14 @@ const HistorialMedico = () => {
                                     <div className="text-center py-16 text-gray-400">
                                         <Activity size={44} className="mx-auto mb-3 opacity-30" />
                                         <p className="text-sm">No hay consultas registradas para esta mascota.</p>
+                                        {esVeterinario && (
+                                            <button
+                                                onClick={() => navigate('/citas')}
+                                                className="mt-4 inline-flex items-center gap-2 text-sm text-emerald-600 hover:text-emerald-800 font-medium"
+                                            >
+                                                <ExternalLink size={14} /> Registrar una cita
+                                            </button>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="relative pl-8">
@@ -315,7 +268,6 @@ const HistorialMedico = () => {
                                                 const esCitaAtendida = consulta.TipoRegistro === 'cita_atendida';
                                                 return (
                                                     <div key={consulta.HistorialId ?? `cita-${consulta.CitaId}`} className="anim-in relative" style={{ animationDelay: `${i * 70}ms` }}>
-                                                        {/* Punto en la línea */}
                                                         <div className={`absolute -left-8 top-1.5 w-6 h-6 rounded-full bg-white flex items-center justify-center border-2 ${esCitaAtendida ? 'border-blue-400' : 'border-emerald-500'}`}>
                                                             <div className={`w-2 h-2 rounded-full ${esCitaAtendida ? 'bg-blue-400' : 'bg-emerald-500'}`} />
                                                         </div>
@@ -326,7 +278,6 @@ const HistorialMedico = () => {
                                                                     <p className="font-semibold text-gray-800">
                                                                         {esCitaAtendida ? consulta.MotivoCita : consulta.Diagnostico}
                                                                     </p>
-                                                                    {/* Badge que distingue el tipo */}
                                                                     {esCitaAtendida ? (
                                                                         <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full text-xs font-medium">
                                                                             <CalendarCheck size={11} /> Cita atendida · pendiente diagnóstico
@@ -342,12 +293,10 @@ const HistorialMedico = () => {
                                                                 </span>
                                                             </div>
 
-                                                            {/* Veterinario */}
                                                             <p className="text-xs text-gray-400 flex items-center gap-1 mb-3">
                                                                 <User size={11} /> {consulta.NombreVeterinario}
                                                             </p>
 
-                                                            {/* Motivo original de la cita (cuando viene de M3) */}
                                                             {!esCitaAtendida && consulta.MotivoCita && (
                                                                 <div className="flex gap-2 mb-1.5 text-sm">
                                                                     <CalendarCheck size={14} className="text-blue-300 flex-shrink-0 mt-0.5" />
@@ -361,7 +310,6 @@ const HistorialMedico = () => {
                                                                 </div>
                                                             )}
 
-                                                            {/* Diagnóstico (solo para registros de historial) */}
                                                             {!esCitaAtendida && consulta.Diagnostico && (
                                                                 <div className="flex gap-2 mb-1.5 text-sm">
                                                                     <Stethoscope size={14} className="text-gray-300 flex-shrink-0 mt-0.5" />
@@ -392,17 +340,16 @@ const HistorialMedico = () => {
                                                                 </div>
                                                             )}
 
-                                                            {/* Botón "Completar diagnóstico" para citas atendidas (solo veterinario) */}
+                                                            {/* Citas atendidas: redirige a citas en vez de abrir modal */}
                                                             {esCitaAtendida && esVeterinario && (
                                                                 <button
-                                                                    onClick={() => abrirModalConsulta(consulta.CitaId)}
+                                                                    onClick={() => navigate('/citas')}
                                                                     className="mt-3 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
                                                                 >
-                                                                    <Plus size={13} /> Completar diagnóstico
+                                                                    <ExternalLink size={13} /> Ir a Citas para completar diagnóstico
                                                                 </button>
                                                             )}
 
-                                                            {/* Productos usados */}
                                                             {consulta.productosUsados && consulta.productosUsados.length > 0 && (
                                                                 <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-gray-50">
                                                                     {consulta.productosUsados.map(prod => (
@@ -479,123 +426,6 @@ const HistorialMedico = () => {
                         </div>
                     </div>
                 </>
-            )}
-
-            {/* ======== MODAL: NUEVA CONSULTA ======== */}
-            {modalConsulta && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto anim-in">
-                        <div className="flex items-center justify-between p-6 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-9 h-9 bg-emerald-100 rounded-lg flex items-center justify-center">
-                                    <Stethoscope size={17} className="text-emerald-600" />
-                                </div>
-                                <h2 className="text-lg font-bold text-gray-800">
-                                    {formConsulta.citaId ? `Completar diagnóstico · Cita #${formConsulta.citaId}` : `Nueva Consulta · Mascota #${mascotaId}`}
-                                </h2>
-                            </div>
-                            <button onClick={() => setModalConsulta(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        <form onSubmit={guardarConsulta} className="p-6 space-y-4">
-                            {/* Mostrar CitaId si viene pre-cargado */}
-                            {formConsulta.citaId && (
-                                <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-2.5 flex items-center gap-2 text-sm text-blue-700">
-                                    <CalendarCheck size={14} />
-                                    Esta consulta quedará vinculada a la Cita #{formConsulta.citaId}
-                                </div>
-                            )}
-
-                            <div>
-                                <label className="text-sm font-medium text-gray-700 block mb-1">Diagnóstico *</label>
-                                <textarea
-                                    value={formConsulta.diagnostico}
-                                    onChange={e => setFormConsulta({ ...formConsulta, diagnostico: e.target.value })}
-                                    required rows={2}
-                                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
-                                    placeholder="Describe el diagnóstico..."
-                                />
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium text-gray-700 block mb-1">Tratamiento</label>
-                                <textarea
-                                    value={formConsulta.tratamiento}
-                                    onChange={e => setFormConsulta({ ...formConsulta, tratamiento: e.target.value })}
-                                    rows={2}
-                                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
-                                    placeholder="Tratamiento indicado..."
-                                />
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium text-gray-700 block mb-1">Notas adicionales</label>
-                                <textarea
-                                    value={formConsulta.notasAdicionales}
-                                    onChange={e => setFormConsulta({ ...formConsulta, notasAdicionales: e.target.value })}
-                                    rows={2}
-                                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
-                                    placeholder="Observaciones, seguimiento..."
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium text-gray-700 flex items-center gap-1 mb-2">
-                                    <Package size={14} /> Productos / Medicamentos usados
-                                </label>
-                                <div className="flex gap-2 mb-2">
-                                    <select
-                                        value={productoSeleccionado}
-                                        onChange={e => setProductoSeleccionado(e.target.value)}
-                                        className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                    >
-                                        <option value="">Selecciona un producto...</option>
-                                        {productos.map(p => (
-                                            <option key={p.ProductoId} value={p.ProductoId}>
-                                                {p.Nombre} (Stock: {p.CantidadActual})
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <input
-                                        type="number" min="1" value={cantidadProducto}
-                                        onChange={e => setCantidadProducto(parseInt(e.target.value) || 1)}
-                                        className="w-16 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-center"
-                                    />
-                                    <button
-                                        type="button" onClick={agregarProducto} disabled={!productoSeleccionado}
-                                        className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-3 py-2 rounded-xl text-sm font-medium disabled:opacity-50 transition-colors"
-                                    >
-                                        <Plus size={16} />
-                                    </button>
-                                </div>
-                                {productosAgregados.length > 0 && (
-                                    <div className="space-y-1.5">
-                                        {productosAgregados.map(p => (
-                                            <div key={p.productoId} className="flex items-center justify-between bg-emerald-50 rounded-lg px-3 py-2 text-sm">
-                                                <span className="text-emerald-800 font-medium">{p.nombre}</span>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-emerald-600 text-xs">x{p.cantidad}</span>
-                                                    <button type="button" onClick={() => quitarProducto(p.productoId)} className="text-red-400 hover:text-red-600 transition-colors">
-                                                        <X size={14} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex gap-3 pt-2">
-                                <button type="button" onClick={() => setModalConsulta(false)} className="flex-1 border border-gray-200 text-gray-600 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors">
-                                    Cancelar
-                                </button>
-                                <button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm">
-                                    Guardar Consulta
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
             )}
 
             {/* ======== MODAL: REGISTRAR VACUNA ======== */}
