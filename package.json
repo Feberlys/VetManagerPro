@@ -2,12 +2,9 @@
   "name": "vetmanagerpro",
   "version": "1.0.0",
   "description": "Proyecto: VetManagerPro",
-  "main": "electron.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "electron": "electron .",
-    "build-exe": "electron-builder"
+    "start": "node index.js"
   },
   "type": "commonjs",
   "dependencies": {
