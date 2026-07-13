@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
     // VITE_API_URL es para la nube. Si no existe, usa localhost.
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api', 
+    baseURL: import.meta.env.VITE_API_URL || 'https://vetmanagerpro-1.onrender.com', 
 });
 
 // Interceptor: Antes de que salga cualquier petición, le pega el token
