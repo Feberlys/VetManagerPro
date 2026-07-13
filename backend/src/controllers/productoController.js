@@ -12,9 +12,18 @@ const listarProductos = async (req, res) => {
 
 const registrarProducto = async (req, res) => {
     try {
-        const { nombre, descripcion, cantidadActual, nivelMinimo } = req.body;
+        // CORRECCIÓN: Ahora extraemos categoria y fechaVencimiento
+        const { nombre, descripcion, cantidadActual, nivelMinimo, categoria, fechaVencimiento } = req.body;
 
-        const creado = await productoModel.crearProducto({ nombre, descripcion, cantidadActual, nivelMinimo });
+        // CORRECCIÓN: Pasamos los nuevos campos al modelo
+        const creado = await productoModel.crearProducto({ 
+            nombre, 
+            descripcion, 
+            cantidadActual, 
+            nivelMinimo,
+            categoria,
+            fechaVencimiento
+        });
 
         if (creado) {
             res.status(201).json({ mensaje: 'Producto registrado exitosamente' });
@@ -30,9 +39,18 @@ const registrarProducto = async (req, res) => {
 const editarProducto = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombre, descripcion, cantidadActual, nivelMinimo } = req.body;
+        // CORRECCIÓN: Ahora extraemos categoria y fechaVencimiento
+        const { nombre, descripcion, cantidadActual, nivelMinimo, categoria, fechaVencimiento } = req.body;
 
-        const actualizado = await productoModel.actualizarProducto(id, { nombre, descripcion, cantidadActual, nivelMinimo });
+        // CORRECCIÓN: Pasamos los nuevos campos al modelo
+        const actualizado = await productoModel.actualizarProducto(id, { 
+            nombre, 
+            descripcion, 
+            cantidadActual, 
+            nivelMinimo,
+            categoria,
+            fechaVencimiento
+        });
         
         if (actualizado) {
             res.status(200).json({ mensaje: 'Producto actualizado con éxito' });
@@ -77,4 +95,10 @@ const activarProducto = async (req, res) => {
     }
 };
 
-module.exports = { listarProductos, registrarProducto, editarProducto, desactivarProducto, activarProducto };
+module.exports = { 
+    listarProductos, 
+    registrarProducto, 
+    editarProducto, 
+    desactivarProducto, 
+    activarProducto 
+};

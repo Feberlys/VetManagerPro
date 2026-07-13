@@ -8,7 +8,7 @@ const {
   buscarMascotas,
   crearMascota,
   editarMascota,
-  desactivarMascota
+  cambiarEstadoMascota
 } = require('../controllers/mascotaController');
 
 const { verificarToken } = require('../middlewares/authMiddleware');
@@ -19,6 +19,6 @@ router.get('/cliente/:clienteId', verificarToken, listarMascotasPorCliente);
 router.get('/:id', verificarToken, obtenerMascota);
 router.post('/', verificarToken, crearMascota);
 router.put('/:id', verificarToken, editarMascota);
-router.patch('/:id/desactivar', verificarToken, desactivarMascota);
+router.patch('/:id/estado', verificarToken, cambiarEstadoMascota);
 
 module.exports = router;

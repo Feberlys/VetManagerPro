@@ -21,7 +21,7 @@ const Layout = ({ children }) => {
    // Definimos el menú centralizado
     const menuItems = [
         // El Dashboard lo ven todos (Admin: 1, Vet: 2, Recep: 3)
-        { path: '/dashboard', name: 'Dashboard', icon: LayoutDashboard, roles: [1, 2, 3] }, 
+        { path: '/dashboard', name: 'Panel de Control', icon: LayoutDashboard, roles: [1, 2, 3] }, 
         
         // Usuarios SOLO lo ve el Admin (RF-03)
         { path: '/usuarios', name: 'Usuarios', icon: Users, roles: [1] }, 
@@ -32,7 +32,7 @@ const Layout = ({ children }) => {
         { path: '/mascotas', name: 'Mascotas', icon: PawPrint, roles: [1, 2, 3] },
         { path: '/inventario', name: 'Inventario', icon: Package, roles: [1, 2, 3] },
         { path: '/historial', name: 'Historial', icon: Stethoscope, roles: [1, 2, 3] },
-        { path: '/guarderia', name: 'Guardería', icon: Hotel, roles: [1, 3] },
+        { path: '/guarderia', name: 'Guardería', icon: Hotel, roles: [1, 2, 3] },
     ];
     
     return (
@@ -44,7 +44,7 @@ const Layout = ({ children }) => {
                 <div className="h-16 flex items-center px-6 bg-[#0f172a] border-b border-gray-800">
                     <Dog size={24} className="text-emerald-400" />
                     <Cat size={18} className="text-emerald-400 -ml-1 mr-2" />
-                    <span className="text-lg font-bold tracking-wide">VetManager Pro</span>
+                    <span className="text-lg font-bold tracking-wide">VetManager</span>
                 </div>
 
                 {/* Navegación */}

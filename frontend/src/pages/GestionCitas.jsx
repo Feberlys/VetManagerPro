@@ -1,5 +1,4 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-
 import { useState, useEffect, useContext } from 'react';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
@@ -15,8 +14,37 @@ const GestionCitas = () => {
   const [mascotas, setMascotas] = useState([]);
   const [veterinarios, setVeterinarios] = useState([]);
   const [error, setError] = useState('');
+  const [mensaje, setMensaje] = useState('');
   const [mostrarModal, setMostrarModal] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
+  const [productos, setProductos] = useState([]);
+  const [mostrarModalVacuna, setMostrarModalVacuna] = useState(false);
+  const [citaVacuna, setCitaVacuna] = useState(null);
+  const [citaCancelacionPendiente, setCitaCancelacionPendiente] = useState(null);
+
+  const [consultaData, setConsultaData] = useState({
+  diagnostico: '',
+  tratamiento: '',
+  notasAdicionales: '',
+  productosUsados: []
+});
+
+ const [productoSeleccionado, setProductoSeleccionado] = useState('');
+ const [busquedaProducto, setBusquedaProducto] = useState('');
+ const [mostrarResultadosProductos, setMostrarResultadosProductos] = useState(false);
+
+ const [busquedaProductoVacuna, setBusquedaProductoVacuna] = useState('');
+ const [mostrarResultadosProductosVacuna, setMostrarResultadosProductosVacuna] = useState(false);
+
+ const [cantidadProducto, setCantidadProducto] = useState(1);
+ const [guardandoConsulta, setGuardandoConsulta] = useState(false);
+
+  const [vacunaData, setVacunaData] = useState({
+    nombreVacuna: '',
+    fechaAplicacion: '',
+    fechaProximaDosis: '',
+    productoId: ''
+  });
 
   const [formData, setFormData] = useState({
     id: null,
@@ -29,17 +57,28 @@ const GestionCitas = () => {
 
   const cargarDatos = async () => {
     try {
-      const [citasRes, mascotasRes, usuariosRes] = await Promise.all([
+      const [citasRes, mascotasRes, productosRes] = await Promise.all([
         api.get('/citas'),
         api.get('/mascotas'),
-        api.get('/usuarios')
+        api.get('/productos'),
       ]);
 
       setCitas(citasRes.data);
       setMascotas(mascotasRes.data);
+      setProductos(
+      productosRes.data.filter(
+      (producto) =>
+      producto.Estado === true &&
+      Number(producto.CantidadActual) > 0
+  )
+);
 
-      const vets = usuariosRes.data.filter((u) => Number(u.RolId) === 2 || Number(u.rolId) === 2);
-      setVeterinarios(vets);
+      try {
+        const usuariosRes = await api.get('/usuarios/veterinarios');
+        setVeterinarios(usuariosRes.data);
+      } catch {
+        setVeterinarios([]);
+      }
     } catch {
       setError('Error al cargar la información de citas');
     }
@@ -50,45 +89,59 @@ const GestionCitas = () => {
   }, []);
 
   const citasFiltradas = citas.filter((cita) => {
-  const fecha = new Date(cita.FechaHora);
+    const fecha = new Date(cita.FechaHora);
+    const coincideEstado = filtroEstado === 'todas' || Number(cita.EstadoCitaId) === Number(filtroEstado);
+    const coincideMes = filtroMes === '' || fecha.getMonth() + 1 === Number(filtroMes);
+    const coincideAnio = filtroAnio === '' || fecha.getFullYear() === Number(filtroAnio);
+    const semanaDelMes = Math.ceil(fecha.getDate() / 7);
+    const coincideSemana = filtroSemana === '' || semanaDelMes === Number(filtroSemana);
 
-  const coincideEstado =
-    filtroEstado === 'todas' ||
-    Number(cita.EstadoCitaId) === Number(filtroEstado);
+    return coincideEstado && coincideMes && coincideAnio && coincideSemana;
+  });
 
-  const coincideMes =
-    filtroMes === '' ||
-    fecha.getMonth() + 1 === Number(filtroMes);
+  const productosFiltrados = productos
+  .filter((producto) => {
+    const texto = busquedaProducto.toLowerCase();
 
-  const coincideAnio =
-    filtroAnio === '' ||
-    fecha.getFullYear() === Number(filtroAnio);
+    return (
+      producto.Nombre?.toLowerCase().includes(texto) &&
+      Number(producto.CantidadActual) > 0 &&
+      producto.Estado === true
+    );
+  })
+  .sort((a, b) => a.Nombre.localeCompare(b.Nombre));
 
-  const semanaDelMes = Math.ceil(fecha.getDate() / 7);
+  const productosVacunaFiltrados = productos
+  .filter((producto) => {
+    const texto = busquedaProductoVacuna.toLowerCase();
 
-  const coincideSemana =
-    filtroSemana === '' ||
-    semanaDelMes === Number(filtroSemana);
-
-  return coincideEstado && coincideMes && coincideAnio && coincideSemana;
-});
+    return (
+      producto.Nombre?.toLowerCase().includes(texto) &&
+      Number(producto.CantidadActual) > 0 &&
+      producto.Estado === true
+    );
+  })
+  .sort((a, b) => a.Nombre.localeCompare(b.Nombre));
 
   const abrirModalCrear = () => {
-    setModoEdicion(false);
-    setFormData({
-      id: null,
-      mascotaId: '',
-      veterinarioId: '',
-      fechaHora: '',
-      motivo: '',
-      estadoCitaId: 1
-    });
-    setMostrarModal(true);
-  };
-
+  setError('');
+  setMensaje('');
+  setModoEdicion(false);
+  setFormData({
+    id: null,
+    mascotaId: '',
+    veterinarioId: '',
+    fechaHora: '',
+    motivo: '',
+    estadoCitaId: 1
+  });
+  setMostrarModal(true);
+};
   const abrirModalEditar = (cita) => {
-    setModoEdicion(true);
+    setError('');
+    setMensaje('');
 
+    setModoEdicion(true);
     setFormData({
       id: cita.CitaId,
       mascotaId: cita.MascotaId,
@@ -97,7 +150,6 @@ const GestionCitas = () => {
       motivo: cita.Motivo,
       estadoCitaId: cita.EstadoCitaId || 1
     });
-
     setMostrarModal(true);
   };
 
@@ -113,83 +165,267 @@ const GestionCitas = () => {
 
   const obtenerNombreEstado = (estadoCitaId) => {
     switch (Number(estadoCitaId)) {
-      case 1:
-        return 'Pendiente';
-      case 2:
-        return 'Atendida';
-      case 3:
-        return 'Cancelada';
-      default:
-        return 'Desconocido';
+      case 1: return 'Pendiente';
+      case 2: return 'Atendida';
+      case 3: return 'Cancelada';
+      default: return 'Desconocido';
     }
   };
 
   const obtenerClaseEstado = (estadoCitaId) => {
     switch (Number(estadoCitaId)) {
-      case 1:
-        return 'bg-yellow-100 text-yellow-800';
-      case 2:
-        return 'bg-emerald-100 text-emerald-800';
-      case 3:
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+      case 1: return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+      case 2: return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+      case 3: return 'bg-rose-100 text-rose-800 border border-rose-200';
+      default: return 'bg-gray-100 text-gray-800 border border-gray-200';
     }
   };
 
   const formatearFecha = (fecha) => {
     if (!fecha) return 'No registrada';
-
     return new Date(fecha).toLocaleString('es-DO', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
     });
   };
 
   const cambiarEstadoCita = async (citaId, estadoCitaId) => {
-    try {
-      await api.patch(`/citas/${citaId}/estado`, { estadoCitaId });
-      cargarDatos();
-    } catch (err) {
-      alert(err.response?.data?.error || 'Error al cambiar el estado de la cita');
-    }
-  };
+  setError('');
+  setMensaje('');
+
+  try {
+    await api.patch(`/citas/${citaId}/estado`, { estadoCitaId });
+    await cargarDatos();
+
+    setMensaje(
+      Number(estadoCitaId) === 3
+        ? 'Cita cancelada correctamente.'
+        : 'Estado de la cita actualizado correctamente.'
+    );
+  } catch (err) {
+    setError(
+      err.response?.data?.error ||
+      'Error al cambiar el estado de la cita'
+    );
+  }
+};
+
+ const solicitarCancelacionCita = (cita) => {
+  setError('');
+  setMensaje('');
+  setCitaCancelacionPendiente(cita);
+};
+
+ const confirmarCancelacionCita = async () => {
+  if (!citaCancelacionPendiente) return;
+
+  await cambiarEstadoCita(citaCancelacionPendiente.CitaId, 3);
+  setCitaCancelacionPendiente(null);
+};
 
   const limpiarFiltros = () => {
-  setFiltroEstado('todas');
-  setFiltroMes('');
-  setFiltroAnio('');
-  setFiltroSemana('');
+    setFiltroEstado('todas'); setFiltroMes(''); setFiltroAnio(''); setFiltroSemana('');
+  };
+
+  const abrirModalVacuna = (cita) => {
+    setError('');
+    setMensaje('');
+    setCitaVacuna(cita);
+
+
+    setConsultaData({
+    diagnostico: '',
+    tratamiento: '',
+    notasAdicionales: '',
+    productosUsados: []
+  });
+
+    setProductoSeleccionado('');
+    setBusquedaProducto('');
+    setMostrarResultadosProductos(false);
+
+    setBusquedaProductoVacuna('');
+    setMostrarResultadosProductosVacuna(false);
+
+    setCantidadProducto(1);
+    setGuardandoConsulta(false);
+
+    setVacunaData({
+    nombreVacuna: '',
+    fechaAplicacion: new Date().toISOString().substring(0, 10),
+    fechaProximaDosis: '',
+    productoId: ''
+  });
+
+    setMostrarModalVacuna(true);
 };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      const payload = {
-        mascotaId: Number(formData.mascotaId),
-        veterinarioId: Number(formData.veterinarioId),
-        fechaHora: formData.fechaHora,
-        motivo: formData.motivo
-      };
+  setError('');
+  setMensaje('');
 
-      if (modoEdicion) {
-        await api.patch(`/citas/${formData.id}/reprogramar`, {
-          fechaHora: formData.fechaHora
-        });
-      } else {
-        await api.post('/citas', payload);
+  try {
+    const payload = {
+      mascotaId: Number(formData.mascotaId),
+      veterinarioId: Number(formData.veterinarioId),
+      fechaHora: formData.fechaHora,
+      motivo: formData.motivo
+    };
+
+    if (modoEdicion) {
+      await api.patch(`/citas/${formData.id}/reprogramar`, {
+        fechaHora: formData.fechaHora
+      });
+
+      setMensaje('Cita reprogramada correctamente.');
+    } else {
+      await api.post('/citas', payload);
+
+      setMensaje('Cita creada correctamente.');
+    }
+
+    setMostrarModal(false);
+    await cargarDatos();
+  } catch (err) {
+    setError(
+      err.response?.data?.error ||
+      'Error al guardar la cita'
+    );
+  }
+};
+
+ const finalizarConsulta = async (e) => {
+  e.preventDefault();
+
+  if (guardandoConsulta) return;
+
+  setError('');
+  setMensaje('');
+
+  if (!citaVacuna) {
+    return;
+  }
+
+  if (!consultaData.diagnostico.trim()) {
+    setError('El diagnóstico es obligatorio.');
+    return;
+  }
+
+  let productosUsadosFinales = [];
+
+  if (productoSeleccionado) {
+    const cantidad = Number(cantidadProducto);
+
+    if (!Number.isInteger(cantidad) || cantidad <= 0) {
+      setError('La cantidad del producto debe ser mayor que 0.');
+      return;
+    }
+
+    const producto = productos.find(
+      (item) => Number(item.ProductoId) === Number(productoSeleccionado)
+    );
+
+    if (!producto) {
+      setError('Producto no encontrado.');
+      return;
+    }
+
+    if (cantidad > Number(producto.CantidadActual)) {
+      setError(
+        `No puedes usar ${cantidad} unidades de ${producto.Nombre}. Stock disponible: ${producto.CantidadActual}.`
+      );
+      return;
+    }
+
+    productosUsadosFinales = [
+      {
+        productoId: Number(productoSeleccionado),
+        cantidad
+      }
+    ];
+  }
+
+  if (
+    productoSeleccionado &&
+    vacunaData.productoId &&
+    Number(productoSeleccionado) === Number(vacunaData.productoId)
+  ) {
+    setError(
+      'Ese producto ya está seleccionado como producto utilizado. No lo selecciones también como producto asociado a la vacuna para evitar doble descuento.'
+    );
+    return;
+  }
+
+  try {
+    setGuardandoConsulta(true);
+
+    await api.post('/historial', {
+      mascotaId: Number(citaVacuna.MascotaId),
+      citaId: Number(citaVacuna.CitaId),
+      diagnostico: consultaData.diagnostico.trim(),
+      tratamiento: consultaData.tratamiento.trim() || null,
+      notasAdicionales: consultaData.notasAdicionales.trim() || null,
+      productosUsados: productosUsadosFinales
+    });
+
+    if (vacunaData.nombreVacuna.trim()) {
+      if (!vacunaData.fechaAplicacion) {
+        setError('Debes indicar la fecha de aplicación de la vacuna.');
+        setGuardandoConsulta(false);
+        return;
       }
 
-      setMostrarModal(false);
-      cargarDatos();
-    } catch (err) {
-      alert(err.response?.data?.error || 'Error al guardar la cita');
+      await api.post('/vacunas', {
+        mascotaId: Number(citaVacuna.MascotaId),
+        nombreVacuna: vacunaData.nombreVacuna.trim(),
+        fechaAplicacion: vacunaData.fechaAplicacion,
+        fechaProximaDosis: vacunaData.fechaProximaDosis || null,
+        productoId: vacunaData.productoId
+          ? Number(vacunaData.productoId)
+          : null
+      });
     }
-  };
+
+    await api.patch(`/citas/${citaVacuna.CitaId}/estado`, {
+      estadoCitaId: 2
+    });
+
+    setMostrarModalVacuna(false);
+    setCitaVacuna(null);
+
+    setConsultaData({
+      diagnostico: '',
+      tratamiento: '',
+      notasAdicionales: '',
+      productosUsados: []
+    });
+
+    setProductoSeleccionado('');
+    setBusquedaProducto('');
+    setMostrarResultadosProductos(false);
+
+    setBusquedaProductoVacuna('');
+    setMostrarResultadosProductosVacuna(false);
+
+    setCantidadProducto(1);
+    setGuardandoConsulta(false);
+
+    await cargarDatos();
+
+    setMensaje('Consulta registrada y cita atendida correctamente.');
+  } catch (err) {
+    console.error('Error al finalizar la consulta:', err);
+
+    setGuardandoConsulta(false);
+
+    setError(
+      err.response?.data?.error ||
+      err.response?.data?.detalle ||
+      'Error al registrar la consulta médica'
+    );
+  }
+};
 
   return (
     <div className="max-w-7xl mx-auto p-6 lg:p-8 bg-gray-50 min-h-screen relative">
@@ -205,110 +441,85 @@ const GestionCitas = () => {
         {(usuario?.rolId === 1 || usuario?.rolId === 2 || usuario?.rolId === 3) && (
           <button
             onClick={abrirModalCrear}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg font-bold shadow-sm transition-colors"
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg font-bold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
           >
-            <Plus size={20} />
-            Nueva Cita
+            <Plus size={20} /> Nueva Cita
           </button>
         )}
       </div>
 
-    <div className="mb-6 bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-4">
-      <div className="flex flex-wrap gap-2">
-    {[
-      { valor: 'todas', texto: 'Todas', clase: 'bg-emerald-600' },
-      { valor: '1', texto: 'Pendientes', clase: 'bg-yellow-500' },
-      { valor: '2', texto: 'Atendidas', clase: 'bg-emerald-600' },
-      { valor: '3', texto: 'Canceladas', clase: 'bg-red-600' }
-    ].map((item) => (
-      <button
-        key={item.valor}
-        onClick={() => setFiltroEstado(item.valor)}
-        className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
-          filtroEstado === item.valor
-            ? `${item.clase} text-white`
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-        }`}
-      >
-        {item.texto}
-      </button>
-    ))}
-  </div>
+      <div className="mb-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+        <div className="flex flex-wrap gap-2">
+          {[
+            { valor: 'todas', texto: 'Todas', clase: 'bg-slate-700' },
+            { valor: '1', texto: 'Pendientes', clase: 'bg-yellow-500' },
+            { valor: '2', texto: 'Atendidas', clase: 'bg-emerald-600' },
+            { valor: '3', texto: 'Canceladas', clase: 'bg-rose-600' }
+          ].map((item) => (
+            <button
+              key={item.valor}
+              onClick={() => setFiltroEstado(item.valor)}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
+                filtroEstado === item.valor ? `${item.clase} text-white shadow-sm` : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {item.texto}
+            </button>
+          ))}
+        </div>
 
-  <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex flex-wrap gap-3 items-center">
+          <select value={filtroSemana} onChange={(e) => setFiltroSemana(e.target.value)} className="px-4 py-2 border border-gray-200 rounded-xl focus:ring-emerald-500 outline-none text-sm font-medium text-gray-600">
+            <option value="">Todas las semanas</option>
+            <option value="1">Semana 1</option><option value="2">Semana 2</option><option value="3">Semana 3</option><option value="4">Semana 4</option><option value="5">Semana 5</option>
+          </select>
 
-    <select
-  value={filtroSemana}
-  onChange={(e) => setFiltroSemana(e.target.value)}
-  className="px-3 py-2 border border-gray-300 rounded-lg"
->
-  <option value="">Todas las semanas</option>
-  <option value="1">Semana 1</option>
-  <option value="2">Semana 2</option>
-  <option value="3">Semana 3</option>
-  <option value="4">Semana 4</option>
-  <option value="5">Semana 5</option>
-    </select>
+          <select value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} className="px-4 py-2 border border-gray-200 rounded-xl focus:ring-emerald-500 outline-none text-sm font-medium text-gray-600">
+            <option value="">Todos los meses</option>
+            <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option><option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option><option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option><option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+          </select>
 
-    <select
-      value={filtroMes}
-      onChange={(e) => setFiltroMes(e.target.value)}
-      className="px-3 py-2 border border-gray-300 rounded-lg"
-    >
-      <option value="">Todos los meses</option>
-      <option value="1">Enero</option>
-      <option value="2">Febrero</option>
-      <option value="3">Marzo</option>
-      <option value="4">Abril</option>
-      <option value="5">Mayo</option>
-      <option value="6">Junio</option>
-      <option value="7">Julio</option>
-      <option value="8">Agosto</option>
-      <option value="9">Septiembre</option>
-      <option value="10">Octubre</option>
-      <option value="11">Noviembre</option>
-      <option value="12">Diciembre</option>
-    </select>
+          <select value={filtroAnio} onChange={(e) => setFiltroAnio(e.target.value)} className="px-4 py-2 border border-gray-200 rounded-xl focus:ring-emerald-500 outline-none text-sm font-medium text-gray-600">
+            <option value="">Todos los años</option>
+            <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option>
+          </select>
 
-    <select
-      value={filtroAnio}
-      onChange={(e) => setFiltroAnio(e.target.value)}
-      className="px-3 py-2 border border-gray-300 rounded-lg"
-    >
-      <option value="">Todos los años</option>
-      <option value="2025">2025</option>
-      <option value="2026">2026</option>
-      <option value="2027">2027</option>
-      <option value="2028">2028</option>
-    </select>
-
-    <button
-      onClick={limpiarFiltros}
-      className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 font-bold"
-    >
-      Limpiar filtros
-    </button>
-
-    <span className="text-sm text-gray-500">
-      Mostrando {citasFiltradas.length} de {citas.length} citas
-    </span>
-
-  </div>
-
-</div>
+          <button onClick={limpiarFiltros} className="px-4 py-2 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 font-bold text-sm transition-colors">
+            Limpiar filtros
+          </button>
+          <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 ml-auto">
+            Mostrando {citasFiltradas.length} de {citas.length} citas
+          </span>
+        </div>
+      </div>
 
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-r-md flex items-center gap-2">
+        <div className="bg-rose-50 border-l-4 border-rose-500 text-rose-700 p-4 mb-6 rounded-r-md flex items-center gap-2 shadow-sm">
           <ShieldAlert size={20} />
           <p className="font-medium">{error}</p>
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+      {mensaje && (
+  <div className="bg-emerald-50 border-l-4 border-emerald-500 text-emerald-700 p-4 mb-6 rounded-r-md flex items-center gap-2 shadow-sm">
+    <CheckCircle size={20} />
+    <p className="font-medium">{mensaje}</p>
+
+    <button
+      type="button"
+      onClick={() => setMensaje('')}
+      className="ml-auto text-emerald-700 hover:text-emerald-900 font-bold"
+    >
+      <X size={18} />
+    </button>
+  </div>
+)}
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-xs uppercase tracking-wider">
+              <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 text-xs uppercase tracking-wider">
                 <th className="py-4 px-6 font-semibold">Fecha y Hora</th>
                 <th className="py-4 px-6 font-semibold">Mascota</th>
                 <th className="py-4 px-6 font-semibold">Veterinario</th>
@@ -317,51 +528,25 @@ const GestionCitas = () => {
                 <th className="py-4 px-6 font-semibold text-right">Acciones</th>
               </tr>
             </thead>
-
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-50">
               {citasFiltradas.map((cita) => (
-                <tr key={cita.CitaId} className="hover:bg-gray-50/50 transition-colors">
+                <tr key={cita.CitaId} className="hover:bg-gray-50/80 transition-colors">
+                  <td className="py-4 px-6"><span className="text-sm font-bold text-gray-900">{formatearFecha(cita.FechaHora)}</span></td>
+                  <td className="py-4 px-6"><span className="text-sm font-medium text-gray-700">{cita.NombreMascota || obtenerNombreMascota(cita.MascotaId)}</span></td>
+                  <td className="py-4 px-6"><span className="text-sm text-gray-600">{cita.NombreVeterinario || obtenerNombreVeterinario(cita.VeterinarioId)}</span></td>
+                  <td className="py-4 px-6"><span className="text-sm text-gray-500">{cita.Motivo}</span></td>
                   <td className="py-4 px-6">
-                    <span className="text-sm font-bold text-gray-900">
-                      {formatearFecha(cita.FechaHora)}
-                    </span>
-                  </td>
-
-                  <td className="py-4 px-6">
-                    <span className="text-sm text-gray-600">
-                      {cita.NombreMascota || obtenerNombreMascota(cita.MascotaId)}
-                    </span>
-                  </td>
-
-                  <td className="py-4 px-6">
-                    <span className="text-sm text-gray-600">
-                      {cita.NombreVeterinario || obtenerNombreVeterinario(cita.VeterinarioId)}
-                    </span>
-                  </td>
-
-                  <td className="py-4 px-6">
-                    <span className="text-sm text-gray-500">{cita.Motivo}</span>
-                  </td>
-
-                  <td className="py-4 px-6">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${obtenerClaseEstado(
-                        cita.EstadoCitaId
-                      )}`}
-                    >
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${obtenerClaseEstado(cita.EstadoCitaId)}`}>
                       {cita.NombreEstado || obtenerNombreEstado(cita.EstadoCitaId)}
                     </span>
                   </td>
-
                   <td className="py-4 px-6 text-right">
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => abrirModalEditar(cita)}
                         disabled={Number(cita.EstadoCitaId) === 2 || Number(cita.EstadoCitaId) === 3}
-                        className={`p-2 border rounded-lg transition-all ${
-                          Number(cita.EstadoCitaId) === 2 || Number(cita.EstadoCitaId) === 3
-                            ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60'
-                            : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                        className={`p-2 border rounded-lg transition-all shadow-sm ${
+                          Number(cita.EstadoCitaId) === 2 || Number(cita.EstadoCitaId) === 3 ? 'bg-gray-50 border-gray-200 text-gray-300 cursor-not-allowed' : 'bg-white border-gray-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200'
                         }`}
                         title="Reprogramar Cita"
                       >
@@ -371,32 +556,28 @@ const GestionCitas = () => {
                       {Number(cita.EstadoCitaId) === 1 && (
                         <>
                           <button
-                            onClick={() => cambiarEstadoCita(cita.CitaId, 2)}
-                            className="p-2 bg-white border border-gray-300 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 transition-all"
+                            onClick={() => abrirModalVacuna(cita)}
+                            className="p-2 bg-white border border-gray-200 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 transition-all shadow-sm"
                             title="Marcar como Atendida"
                           >
                             <CheckCircle size={16} />
                           </button>
-
                           <button
-                            onClick={() => cambiarEstadoCita(cita.CitaId, 3)}
-                            className="p-2 bg-white border border-gray-300 rounded-lg text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
-                            title="Cancelar Cita"
-                          >
-                            <X size={16} />
-                          </button>
+  onClick={() => solicitarCancelacionCita(cita)}
+  className="p-2 bg-white border border-gray-200 rounded-lg text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all shadow-sm"
+  title="Cancelar Cita"
+>
+  <X size={16} />
+</button>
                         </>
                       )}
                     </div>
                   </td>
                 </tr>
               ))}
-
               {citasFiltradas.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="py-8 px-6 text-center text-gray-500">
-                    No hay citas para el filtro seleccionado.
-                  </td>
+                  <td colSpan="6" className="py-8 px-6 text-center text-gray-500">No hay citas para el filtro seleccionado.</td>
                 </tr>
               )}
             </tbody>
@@ -405,97 +586,420 @@ const GestionCitas = () => {
       </div>
 
       {mostrarModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
-            <div className="flex justify-between items-center p-6 border-b border-gray-100">
-              <h2 className="text-xl font-bold text-gray-800">
-                {modoEdicion ? 'Reprogramar Cita' : 'Nueva Cita'}
-              </h2>
-              <button onClick={() => setMostrarModal(false)} className="text-gray-400 hover:text-gray-600">
-                <X size={24} />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transform transition-all">
+            <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50/50">
+              <h2 className="text-xl font-extrabold text-gray-800">{modoEdicion ? 'Reprogramar Cita' : 'Nueva Cita'}</h2>
+              <button onClick={() => setMostrarModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors"><X size={24} /></button>
             </div>
-
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Mascota</label>
-                <select
-                  required
-                  disabled={modoEdicion}
-                  value={formData.mascotaId}
-                  onChange={(e) => setFormData({ ...formData, mascotaId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-gray-100"
-                >
+                <select required disabled={modoEdicion} value={formData.mascotaId} onChange={(e) => setFormData({ ...formData, mascotaId: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none disabled:bg-gray-100">
                   <option value="">Seleccione una mascota</option>
                   {mascotas.map((mascota) => (
-                    <option key={mascota.MascotaId} value={mascota.MascotaId}>
-                      {mascota.Nombre} - {mascota.Especie}
-                    </option>
+                    <option key={mascota.MascotaId} value={mascota.MascotaId}>{mascota.Nombre} - {mascota.Especie}</option>
                   ))}
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Veterinario</label>
-                <select
-                  required
-                  disabled={modoEdicion}
-                  value={formData.veterinarioId}
-                  onChange={(e) => setFormData({ ...formData, veterinarioId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-gray-100"
-                >
+                <select required disabled={modoEdicion} value={formData.veterinarioId} onChange={(e) => setFormData({ ...formData, veterinarioId: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none disabled:bg-gray-100">
                   <option value="">Seleccione un veterinario</option>
                   {veterinarios.map((vet) => (
-                    <option key={vet.UsuarioId} value={vet.UsuarioId}>
-                      {vet.NombreCompleto}
-                    </option>
+                    <option key={vet.UsuarioId} value={vet.UsuarioId}>{vet.NombreCompleto}</option>
                   ))}
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Fecha y Hora</label>
-                <input
-                  type="datetime-local"
-                  required
-                  value={formData.fechaHora}
-                  onChange={(e) => setFormData({ ...formData, fechaHora: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
-                />
+                <input type="datetime-local" required value={formData.fechaHora} onChange={(e) => setFormData({ ...formData, fechaHora: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none" />
               </div>
-
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Motivo</label>
-                <textarea
-                  required
-                  disabled={modoEdicion}
-                  value={formData.motivo}
-                  onChange={(e) => setFormData({ ...formData, motivo: e.target.value })}
-                  rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-gray-100"
-                />
+                <textarea required disabled={modoEdicion} value={formData.motivo} onChange={(e) => setFormData({ ...formData, motivo: e.target.value })} rows="3" className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none disabled:bg-gray-100" />
               </div>
-
-              <div className="pt-4 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setMostrarModal(false)}
-                  className="w-1/2 py-2.5 px-4 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Cancelar
-                </button>
-
-                <button
-                  type="submit"
-                  className="w-1/2 py-2.5 px-4 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-colors"
-                >
-                  {modoEdicion ? 'Reprogramar' : 'Guardar'}
-                </button>
+              <div className="pt-6 flex gap-3">
+                <button type="button" onClick={() => setMostrarModal(false)} className="w-1/2 py-2.5 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors">Cancelar</button>
+                <button type="submit" className="w-1/2 py-2.5 px-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">{modoEdicion ? 'Reprogramar' : 'Guardar'}</button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+{mostrarModalVacuna && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+    <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50/50 sticky top-0 z-10">
+        <div>
+          <h2 className="text-xl font-extrabold text-gray-800">
+            Atender Cita
+          </h2>
+
+          <p className="text-sm text-gray-500 mt-1">
+            {citaVacuna
+              ? `${citaVacuna.NombreMascota || obtenerNombreMascota(citaVacuna.MascotaId)} · ${citaVacuna.Motivo}`
+              : ''}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setMostrarModalVacuna(false)}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X size={24} />
+        </button>
+      </div>
+
+      <form onSubmit={finalizarConsulta} className="p-6 space-y-6">
+        <div>
+          <h3 className="text-lg font-extrabold text-gray-800 mb-4">
+            Consulta médica
+          </h3>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Diagnóstico *
+              </label>
+
+              <textarea
+                required
+                rows="3"
+                value={consultaData.diagnostico}
+                onChange={(e) =>
+                  setConsultaData({
+                    ...consultaData,
+                    diagnostico: e.target.value
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                placeholder="Describe el diagnóstico de la mascota"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Tratamiento
+              </label>
+
+              <textarea
+                rows="3"
+                value={consultaData.tratamiento}
+                onChange={(e) =>
+                  setConsultaData({
+                    ...consultaData,
+                    tratamiento: e.target.value
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                placeholder="Tratamiento indicado"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Notas adicionales
+              </label>
+
+              <textarea
+                rows="2"
+                value={consultaData.notasAdicionales}
+                onChange={(e) =>
+                  setConsultaData({
+                    ...consultaData,
+                    notasAdicionales: e.target.value
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                placeholder="Observaciones adicionales"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-gray-100 pt-6">
+          <h3 className="text-lg font-extrabold text-gray-800 mb-4">
+            Productos utilizados
+          </h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3">
+  <div className="relative">
+    <input
+      type="text"
+      value={busquedaProducto}
+      onChange={(e) => {
+        setBusquedaProducto(e.target.value);
+        setProductoSeleccionado('');
+        setMostrarResultadosProductos(true);
+      }}
+      onFocus={() => setMostrarResultadosProductos(true)}
+      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
+      placeholder="Buscar producto utilizado..."
+    />
+
+    {mostrarResultadosProductos && busquedaProducto.trim() && (
+      <div className="absolute z-30 left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden max-h-64 overflow-y-auto">
+        {productosFiltrados.length === 0 ? (
+          <div className="p-4 text-sm text-gray-500 text-center">
+            No se encontraron productos disponibles.
+          </div>
+        ) : (
+          productosFiltrados.map((producto) => (
+            <button
+              key={producto.ProductoId}
+              type="button"
+              onClick={() => {
+                setProductoSeleccionado(String(producto.ProductoId));
+                setBusquedaProducto(`${producto.Nombre} - Stock: ${producto.CantidadActual}`);
+                setMostrarResultadosProductos(false);
+              }}
+              className="w-full text-left px-4 py-3 hover:bg-emerald-50 border-b border-gray-100 last:border-b-0 transition-colors"
+            >
+              <p className="font-bold text-gray-800">
+                {producto.Nombre}
+              </p>
+
+              <p className="text-xs text-gray-500">
+                Stock disponible: {producto.CantidadActual}
+              </p>
+            </button>
+          ))
+        )}
+      </div>
+    )}
+  </div>
+
+  <input
+    type="number"
+    min="1"
+    step="1"
+    value={cantidadProducto}
+    onChange={(e) => setCantidadProducto(e.target.value)}
+    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
+    placeholder="Cantidad"
+  />
+</div>
+
+<p className="text-xs text-gray-500 mt-2">
+  Si seleccionas un producto, se descontará automáticamente al finalizar la consulta.
+</p>
+        </div>
+
+        <div className="border-t border-gray-100 pt-6">
+          <h3 className="text-lg font-extrabold text-gray-800">
+            Vacuna aplicada
+          </h3>
+
+          <p className="text-sm text-gray-500 mb-4">
+            Opcional. Déjalo vacío si no se aplicó ninguna vacuna.
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Nombre de la vacuna
+              </label>
+
+              <input
+                type="text"
+                value={vacunaData.nombreVacuna}
+                onChange={(e) =>
+                  setVacunaData({
+                    ...vacunaData,
+                    nombreVacuna: e.target.value
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
+                placeholder="Ej: Rabia, Parvovirus, Moquillo"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Fecha aplicación
+                </label>
+
+                <input
+                  type="date"
+                  value={vacunaData.fechaAplicacion}
+                  onChange={(e) =>
+                    setVacunaData({
+                      ...vacunaData,
+                      fechaAplicacion: e.target.value
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Próxima dosis
+                </label>
+
+                <input
+                  type="date"
+                  value={vacunaData.fechaProximaDosis}
+                  onChange={(e) =>
+                    setVacunaData({
+                      ...vacunaData,
+                      fechaProximaDosis: e.target.value
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Producto asociado a la vacuna
+              </label>
+
+              <div className="relative">
+  <input
+    type="text"
+    value={busquedaProductoVacuna}
+    onChange={(e) => {
+      setBusquedaProductoVacuna(e.target.value);
+      setVacunaData({
+        ...vacunaData,
+        productoId: ''
+      });
+      setMostrarResultadosProductosVacuna(true);
+    }}
+    onFocus={() => setMostrarResultadosProductosVacuna(true)}
+    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 outline-none"
+    placeholder="Buscar producto asociado a la vacuna..."
+  />
+
+  {mostrarResultadosProductosVacuna && busquedaProductoVacuna.trim() && (
+    <div className="absolute z-30 left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden max-h-64 overflow-y-auto">
+      {productosVacunaFiltrados.length === 0 ? (
+        <div className="p-4 text-sm text-gray-500 text-center">
+          No se encontraron productos disponibles.
+        </div>
+      ) : (
+        productosVacunaFiltrados.map((producto) => (
+          <button
+            key={producto.ProductoId}
+            type="button"
+            onClick={() => {
+              setVacunaData({
+                ...vacunaData,
+                productoId: String(producto.ProductoId)
+              });
+              setBusquedaProductoVacuna(`${producto.Nombre} - Stock: ${producto.CantidadActual}`);
+              setMostrarResultadosProductosVacuna(false);
+            }}
+            className="w-full text-left px-4 py-3 hover:bg-emerald-50 border-b border-gray-100 last:border-b-0 transition-colors"
+          >
+            <p className="font-bold text-gray-800">
+              {producto.Nombre}
+            </p>
+
+            <p className="text-xs text-gray-500">
+              Stock disponible: {producto.CantidadActual}
+            </p>
+          </button>
+        ))
+      )}
+    </div>
+  )}
+
+  {vacunaData.productoId && (
+    <button
+      type="button"
+      onClick={() => {
+        setVacunaData({
+          ...vacunaData,
+          productoId: ''
+        });
+        setBusquedaProductoVacuna('');
+        setMostrarResultadosProductosVacuna(false);
+      }}
+      className="mt-2 text-xs font-bold text-rose-600 hover:text-rose-700"
+    >
+      Quitar producto asociado
+    </button>
+  )}
+</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-6 flex gap-3 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={() => setMostrarModalVacuna(false)}
+            className="w-1/2 py-2.5 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+          >
+            Cancelar
+          </button>
+
+          <button
+           type="submit"
+            disabled={!consultaData.diagnostico.trim() || guardandoConsulta}
+            className="w-1/2 py-2.5 px-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+          >
+           {guardandoConsulta ? 'Guardando...' : 'Finalizar Consulta'}         
+            </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}{citaCancelacionPendiente && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+      <div className="p-6 border-b border-gray-100 bg-gray-50/50">
+        <h2 className="text-xl font-extrabold text-gray-800">
+          Cancelar cita
+        </h2>
+
+        <p className="text-sm text-gray-500 mt-1">
+          Confirma la acción antes de continuar.
+        </p>
+      </div>
+
+      <div className="p-6">
+        <p className="text-gray-700 text-sm leading-relaxed">
+          ¿Deseas cancelar la cita de{' '}
+          <span className="font-bold text-gray-900">
+            {citaCancelacionPendiente.NombreMascota ||
+              obtenerNombreMascota(citaCancelacionPendiente.MascotaId)}
+          </span>
+          ?
+        </p>
+
+        <div className="mt-4 bg-amber-50 border border-amber-100 text-amber-800 rounded-xl p-4 text-sm">
+          La cita no se eliminará. Solo quedará marcada como cancelada y no podrá ser atendida.
+        </div>
+      </div>
+
+      <div className="p-6 pt-0 flex gap-3">
+        <button
+          type="button"
+          onClick={() => setCitaCancelacionPendiente(null)}
+          className="w-1/2 py-2.5 px-4 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+        >
+          Volver
+        </button>
+
+        <button
+          type="button"
+          onClick={confirmarCancelacionCita}
+          className="w-1/2 py-2.5 px-4 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 transition-all shadow-sm"
+        >
+          Cancelar cita
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

@@ -14,9 +14,21 @@ const listarUsuarios = async (req, res) => {
 const editarUsuario = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombreCompleto, rolId } = req.body;
+        const { nombreUsuario, nombreCompleto, correo, password, rolId } = req.body;
 
-        const actualizado = await usuarioModel.actualizarUsuario(id, { nombreCompleto, rolId });
+        const datosActualizar = {
+            nombreUsuario,
+            nombreCompleto,
+            correo,
+            rolId
+        };
+
+        if (password && password.trim() !== '') {
+            const salt = await bcrypt.genSalt(10);
+            datosActualizar.passwordHash = await bcrypt.hash(password, salt);
+        }
+
+        const actualizado = await usuarioModel.actualizarUsuario(id, datosActualizar);
         
         if (actualizado) {
             res.status(200).json({ mensaje: 'Usuario actualizado con éxito' });
@@ -89,4 +101,14 @@ const activarUsuario = async (req, res) => {
     }
 };
 
-module.exports = { listarUsuarios, editarUsuario, desactivarUsuario, crearUsuarioAdmin, activarUsuario };
+const listarVeterinarios = async (req, res) => {
+    try {
+        const veterinarios = await usuarioModel.obtenerVeterinarios();
+        res.status(200).json(veterinarios);
+    } catch (error) {
+        console.error('Error al listar veterinarios:', error);
+        res.status(500).json({ error: 'Hubo un error al obtener los veterinarios' });
+    }
+};
+
+module.exports = { listarUsuarios, editarUsuario, desactivarUsuario, crearUsuarioAdmin, activarUsuario, listarVeterinarios };

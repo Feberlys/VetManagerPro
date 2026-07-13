@@ -10,26 +10,13 @@ import GestionClientes from './pages/GestionClientes';
 import GestionMascotas from './pages/GestionMascotas';
 import GestionCitas from './pages/GestionCitas';
 import GestionGuarderia from './pages/GestionGuarderia';
+import Dashboard from './pages/Dashboard'; // ¡Aquí importamos el oficial!
 
 const RutaProtegida = ({ children }) => {
     const { usuario, cargando } = useContext(AuthContext);
     if (cargando) return <div>Cargando...</div>;
     if (!usuario) return <Navigate to="/" />;
     return <Layout>{children}</Layout>;
-};
-
-const Dashboard = () => {
-    const { usuario } = useContext(AuthContext);
-    return (
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">¡Hola, {usuario?.nombreCompleto}! 👋</h1>
-            <p className="text-gray-500">Bienvenido al panel de control de VetManager Pro.</p>
-            <div className="mt-8 p-6 bg-emerald-50 rounded-xl border border-emerald-100">
-                <h3 className="text-emerald-800 font-bold mb-2">Resumen del sistema</h3>
-                <p className="text-emerald-600 text-sm">Selecciona una opción en el menú lateral para comenzar a trabajar.</p>
-            </div>
-        </div>
-    );
 };
 
 function App() {
