@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'http://localhost:3000/api', // La URL de tu servidor Node
+    // VITE_API_URL es para la nube. Si no existe, usa localhost.
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api', 
 });
 
 // Interceptor: Antes de que salga cualquier petición, le pega el token
