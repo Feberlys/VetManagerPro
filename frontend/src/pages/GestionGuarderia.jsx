@@ -2,10 +2,25 @@ import { useEffect, useState, useContext } from 'react';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { Home, BedDouble, LogIn, LogOut, Info } from 'lucide-react';
+import Swal from 'sweetalert2';
+
+// Configuración de las alertas rápidas estilo "Toast"
+const Toast = Swal.mixin({
+  toast: true,
+  position: 'bottom-end',
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  iconColor: '#059669', // <- Agrega esto para que el check sea verde esmeralda
+  didOpen: (toast) => {
+    toast.addEventListener('mouseenter', Swal.stopTimer);
+    toast.addEventListener('mouseleave', Swal.resumeTimer);
+  }
+});
 
 const GestionGuarderia = () => {
   const { usuario } = useContext(AuthContext);
-  const esAdmin = [1, 2].includes(usuario?.rolId); // Mantenemos el acceso a vet/admin
+  const esAdmin = [1, 2].includes(usuario?.rolId);
   
   const [espacios, setEspacios] = useState([]);
   const [espaciosDisponibles, setEspaciosDisponibles] = useState([]);
@@ -31,7 +46,10 @@ const GestionGuarderia = () => {
       setOcupacion(resOcupacion.data.data || []);
     } catch (error) {
       console.error(error);
-      alert('Error al cargar los datos de guardería.');
+      Toast.fire({
+        icon: 'error',
+        title: 'Error al cargar los datos de guardería.'
+      });
     }
   };
 
@@ -50,12 +68,18 @@ const GestionGuarderia = () => {
         tipo: formEspacio.tipo,
         precioPorNoche: Number(formEspacio.precioPorNoche)
       });
-      alert('Espacio creado correctamente.');
+      Toast.fire({
+        icon: 'success',
+        title: 'Espacio creado correctamente.'
+      });
       setFormEspacio({ numeroEspacio: '', tipo: 'Pequeño', precioPorNoche: '' });
       cargarDatos();
     } catch (error) {
       console.error(error);
-      alert(error.response?.data?.message || 'Error al crear el espacio.');
+      Toast.fire({
+        icon: 'error',
+        title: error.response?.data?.message || 'Error al crear el espacio.'
+      });
     }
   };
 
@@ -69,32 +93,59 @@ const GestionGuarderia = () => {
         fechaSalidaEstimada: formCheckIn.fechaSalidaEstimada,
         notasEspeciales: formCheckIn.notasEspeciales
       });
-      alert('Check-in realizado correctamente.');
+      Toast.fire({
+        icon: 'success',
+        title: 'Check-in realizado correctamente.'
+      });
       setFormCheckIn({ mascotaId: '', espacioId: '', fechaEntrada: '', fechaSalidaEstimada: '', notasEspeciales: '' });
       cargarDatos();
     } catch (error) {
       console.error(error);
-      alert(error.response?.data?.message || 'Error al hacer check-in.');
+      Toast.fire({
+        icon: 'error',
+        title: error.response?.data?.message || 'Error al hacer check-in.'
+      });
     }
   };
 
   const hacerCheckOut = async (hospedajeId) => {
-    const confirmar = window.confirm('¿Seguro que deseas hacer check-out de esta mascota?');
-    if (!confirmar) return;
-    try {
-      const res = await api.put(`/guarderia/checkout/${hospedajeId}`);
-      alert(`Check-out realizado. Total a cobrar: RD$ ${res.data.data.totalCobrar}`);
-      cargarDatos();
-    } catch (error) {
-      console.error(error);
-      alert(error.response?.data?.message || 'Error al hacer check-out.');
-    }
+    Swal.fire({
+      title: '¿Confirmar Check-out?',
+      text: "¿Seguro que deseas hacer check-out de esta mascota?",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#059669',
+      cancelButtonColor: '#e11d48',
+      confirmButtonText: 'Sí, confirmar',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const res = await api.put(`/guarderia/checkout/${hospedajeId}`);
+          
+          Swal.fire({
+            title: '¡Check-out realizado!',
+            text: `Total a cobrar: RD$ ${res.data.data.totalCobrar}`,
+            icon: 'success',
+            iconColor: '#059669', // <- Agrega esto aquí también
+            confirmButtonColor: '#059669'
+          });
+          
+          cargarDatos();
+        } catch (error) {
+          console.error(error);
+          Toast.fire({
+            icon: 'error',
+            title: error.response?.data?.message || 'Error al hacer check-out.'
+          });
+        }
+      }
+    });
   };
 
   return (
     <div className="max-w-7xl mx-auto p-6 lg:p-8 bg-gray-50 min-h-screen relative space-y-8">
       
-      {/* Encabezado Estandarizado */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-gray-900 flex items-center gap-3">
@@ -107,9 +158,7 @@ const GestionGuarderia = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Columna Izquierda: Formularios (Ocupa 1 tercio en PC) */}
         <div className="space-y-8">
-          
           <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 transition-all">
             <h2 className="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
               <LogIn className="text-emerald-600" size={20} /> Hacer Check-in
@@ -137,7 +186,7 @@ const GestionGuarderia = () => {
             </form>
           </section>
 
-          {usuario?.rolId === 1 && (
+          {esAdmin && (
             <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
                 <BedDouble className="text-emerald-600" size={20} /> Registrar Espacio
@@ -154,12 +203,9 @@ const GestionGuarderia = () => {
               </form>
             </section>
           )}
-
         </div>
 
-        {/* Columna Derecha: Tablas (Ocupa 2 tercios en PC) */}
         <div className="lg:col-span-2 space-y-8">
-          
           <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <h2 className="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
               <Info className="text-emerald-600" size={20} /> Ocupación Actual
@@ -216,7 +262,7 @@ const GestionGuarderia = () => {
               <table className="w-full text-left">
                 <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 text-xs uppercase tracking-wider">
                   <tr>
-                    <th className="py-3 px-4 font-semibold">Número</th>
+                    <th className="py-3 px-4 font-semibold">Espacio de cubículos</th>
                     <th className="py-3 px-4 font-semibold">Tipo</th>
                     <th className="py-3 px-4 font-semibold">Precio / Noche</th>
                     <th className="py-3 px-4 font-semibold">Estado</th>
