@@ -10,7 +10,9 @@ const app = express();
 // 1. MIDDLEWARES
 // ==========================================
 app.use(cors({
-  origin: 'https://vetmanagerpro-2.onrender.com' // Tu URL de frontend
+  origin: 'https://vetmanagerpro-2.onrender.com', // Tu URL de frontend
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
