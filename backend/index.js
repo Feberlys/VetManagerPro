@@ -59,18 +59,18 @@ getConnection();
 
 // Autenticación
 const authRoutes = require('./src/routes/authRoutes');
-app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
 
 // Módulo M1 - Usuarios (Feberlys)
 const usuarioRoutes = require('./src/routes/usuarioRoutes');
-app.use('/api/usuarios', usuarioRoutes);
+app.use('/usuarios', usuarioRoutes);
 
 // Módulo M2 - Clientes y Mascotas 
 const clienteRoutes = require('./src/routes/clienteRoutes');
-app.use('/api/clientes', clienteRoutes);
+app.use('/clientes', clienteRoutes);
 
 const mascotaRoutes = require('./src/routes/mascotaRoutes');
-app.use('/api/mascotas', mascotaRoutes);
+app.use('/mascotas', mascotaRoutes);
 
 // Módulo M3 - Citas
 const citaRoutes = require('./src/routes/citaRoutes');
