@@ -4,14 +4,14 @@ import axios from 'axios';
 const getBaseURL = () => {
     // En producción: usa la variable de entorno o la URL de Render del backend
     if (import.meta.env.PROD) {
-        return import.meta.env.VITE_API_URL || 'https://vetmanagerpro.onrender.com/api';
+        return import.meta.env.VITE_API_URL || 'https://vetmanagerpro.onrender.com';
     }
     // En desarrollo: localhost
     return 'http://localhost:3000';
 };
 
 const api = axios.create({
-    baseURL: 'https://vetmanagerpro.onrender.com', // URL base del backend
+    baseURL: 'https://vetmanagerpro.onrender.com/api', // URL base del backend
 });
 
 // Interceptor: Antes de que salga cualquier petición, le pega el token

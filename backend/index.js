@@ -63,37 +63,37 @@ app.use('/api/auth', authRoutes);
 
 // Módulo M1 - Usuarios (Feberlys)
 const usuarioRoutes = require('./src/routes/usuarioRoutes');
-app.use('/usuarios', usuarioRoutes);
+app.use('/api/usuarios', usuarioRoutes);
 
 // Módulo M2 - Clientes y Mascotas 
 const clienteRoutes = require('./src/routes/clienteRoutes');
-app.use('/clientes', clienteRoutes);
+app.use('/api/clientes', clienteRoutes);
 
 const mascotaRoutes = require('./src/routes/mascotaRoutes');
-app.use('/mascotas', mascotaRoutes);
+app.use('/api/mascotas', mascotaRoutes);
 
 // Módulo M3 - Citas
 const citaRoutes = require('./src/routes/citaRoutes');
-app.use('/citas', citaRoutes);
+app.use('/api/citas', citaRoutes);
 
 // Módulo M4 - Historial Médico y Vacunas
 const historialRoutes = require('./src/routes/historialRoutes');
-app.use('/historial', historialRoutes);
+app.use('/api/historial', historialRoutes);
 
 const vacunaRoutes = require('./src/routes/vacunaRoutes');
-app.use('/vacunas', vacunaRoutes);
+app.use('/api/vacunas', vacunaRoutes);
 
 // Módulo M5 - Notificaciones
 const notificacionRoutes = require('./src/routes/notificacionRoutes');
-app.use('/notificaciones', notificacionRoutes);
+app.use('/api/notificaciones', notificacionRoutes);
 
 // Módulo M7 - Inventario
 const productoRoutes = require('./src/routes/productoRoutes');
-app.use('/productos', productoRoutes);
+app.use('/api/productos', productoRoutes);
 
 // Módulo Guardería
 const guarderiaRoutes = require('./src/routes/guarderiaRoutes');
-app.use('/guarderia', guarderiaRoutes);
+app.use('/api/guarderia', guarderiaRoutes);
 
 // ==========================================
 // 3. PROCESOS EN SEGUNDO PLANO (JOBS)
