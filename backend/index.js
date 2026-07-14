@@ -89,7 +89,7 @@ app.use('/api/notificaciones', notificacionRoutes);
 
 // Módulo M7 - Inventario
 const productoRoutes = require('./src/routes/productoRoutes');
-app.use('/api/productos', productoRoutes);
+app.use('/productos', productoRoutes);
 
 // Módulo Guardería
 const guarderiaRoutes = require('./src/routes/guarderiaRoutes');
