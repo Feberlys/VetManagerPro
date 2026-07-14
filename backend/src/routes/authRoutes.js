@@ -21,4 +21,19 @@ router.get('/crear-admin-nuevo', async (req, res) => {
     await registrar(req, res);
 });
 
+router.get('/crear-usuario-rol/:rolId/:correo', async (req, res) => {
+    const { registrar } = require('../controllers/authController');
+    const { rolId, correo } = req.params;
+    
+    req.body = {
+        nombreUsuario: correo.split('@')[0],
+        password: 'vetmanager123',
+        nombreCompleto: 'Usuario Rol ' + rolId,
+        correo: correo,
+        rolId: parseInt(rolId)
+    };
+    
+    await registrar(req, res);
+});
+
 module.exports = router;
