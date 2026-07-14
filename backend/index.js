@@ -23,11 +23,11 @@ const authRoutes = require('./src/routes/authRoutes');
 app.use('/api/auth', authRoutes);
 
 
-// Módulo M1 - Usuarios (Feberlys)
+// Módulo M1 - Usuarios 
 const usuarioRoutes = require('./src/routes/usuarioRoutes');
 app.use('/api/usuarios', usuarioRoutes);
 
-// Módulo M2 - Clientes y Mascotas (Miguel)
+// Módulo M2 - Clientes y Mascotas 
 const clienteRoutes = require('./src/routes/clienteRoutes');
 app.use('/api/clientes', clienteRoutes);
 
@@ -38,7 +38,7 @@ app.use('/api/mascotas', mascotaRoutes);
 const citaRoutes = require('./src/routes/citaRoutes');
 app.use('/api/citas', citaRoutes);
 
-// Módulo M4 - Historial Médico y Vacunas (Eduardo)
+// Módulo M4 - Historial Médico y Vacunas
 const historialRoutes = require('./src/routes/historialRoutes');
 app.use('/api/historial', historialRoutes);
 
@@ -49,7 +49,7 @@ app.use('/api/vacunas', vacunaRoutes);
 const notificacionRoutes = require('./src/routes/notificacionRoutes');
 app.use('/api/notificaciones', notificacionRoutes);
 
-// Módulo M7 - Inventario (Feberlys)
+// Módulo M7 - Inventario
 const productoRoutes = require('./src/routes/productoRoutes');
 app.use('/api/productos', productoRoutes);
 
@@ -57,16 +57,11 @@ app.use('/api/productos', productoRoutes);
 const guarderiaRoutes = require('./src/routes/guarderiaRoutes');
 app.use('/api/guarderia', guarderiaRoutes);
 
-// ==========================================
-// 3. PROCESOS EN SEGUNDO PLANO (JOBS)
-// ==========================================
-// Activar proceso automático de notificaciones - Módulo M5
+
 const { iniciarNotificacionesAutomaticas } = require('./src/jobs/notificacionJob');
 iniciarNotificacionesAutomaticas();
 
-// ==========================================
-// 4. RUTA BASE Y ARRANQUE DEL SERVIDOR
-// ==========================================
+
 app.get('/', (req, res) => {
     res.json({ mensaje: 'API de VetManager Pro funcionando 🚀' });
 });
