@@ -9,7 +9,9 @@ const app = express();
 // ==========================================
 // 1. MIDDLEWARES
 // ==========================================
-app.use(cors());
+app.use(cors({
+  origin: 'https://vetmanagerpro-2.onrender.com' // Tu URL de frontend
+}));
 app.use(express.json());
 
 // Inicializar la conexión a la base de datos
@@ -22,6 +24,7 @@ getConnection();
 // Autenticación
 const authRoutes = require('./src/routes/authRoutes');
 app.use('/api/auth', authRoutes);
+
 
 // Módulo M1 - Usuarios (Feberlys)
 const usuarioRoutes = require('./src/routes/usuarioRoutes');

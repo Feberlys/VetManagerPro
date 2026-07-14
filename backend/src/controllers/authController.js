@@ -28,6 +28,7 @@ const registrar = async (req, res) => {
 };
 
 const login = async (req, res) => {
+    console.log("Datos recibidos:", req.body); // Log para depuración
     try {
         const { correo, password } = req.body;
 

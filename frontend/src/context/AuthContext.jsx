@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (correo, password) => {
         try {
-            const response = await api.post('/api/auth/login', { correo, password });
+            const response = await api.post('/api/auth/login', { correo, password },{headers: { 'Content-Type': 'application/json' }});
             const { token, usuario } = response.data;
 
             // Guardar en el navegador
