@@ -31,8 +31,8 @@ const GestionMascotas = () => {
   const cargarDatos = async () => {
     try {
       const [mascotasRes, clientesRes] = await Promise.all([
-        api.get('/mascotas'),
-        api.get('/clientes')
+        api.get('/api/mascotas'),
+        api.get('/api/clientes')
       ]);
       setMascotas(mascotasRes.data);
       setClientes(clientesRes.data);

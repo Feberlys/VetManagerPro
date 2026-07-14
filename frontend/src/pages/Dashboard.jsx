@@ -35,10 +35,10 @@ const Dashboard = () => {
     const cargarDatosDashboard = async () => {
         try {
             const [resMascotas, resCitas, resGuarderia, resProductos] = await Promise.allSettled([
-                api.get('/mascotas'),
-                api.get('/citas'), 
-                api.get('/guarderia/ocupacion'),
-                api.get('/productos')
+                api.get('/api/mascotas'),
+                api.get('/api/citas'),
+                api.get('/api/guarderia/ocupacion'),
+                api.get('/api/productos')
             ]);
 
             const mascotas = resMascotas.status === 'fulfilled' ? resMascotas.value.data : [];
