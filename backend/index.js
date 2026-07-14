@@ -51,41 +51,41 @@ getConnection();
 
 // Autenticación
 const authRoutes = require('./src/routes/authRoutes');
-app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
 
 // Módulo M1 - Usuarios (Feberlys)
 const usuarioRoutes = require('./src/routes/usuarioRoutes');
-app.use('/api/usuarios', usuarioRoutes);
+app.use('/usuarios', usuarioRoutes);
 
 // Módulo M2 - Clientes y Mascotas 
 const clienteRoutes = require('./src/routes/clienteRoutes');
-app.use('/api/clientes', clienteRoutes);
+app.use('/clientes', clienteRoutes);
 
 const mascotaRoutes = require('./src/routes/mascotaRoutes');
-app.use('/api/mascotas', mascotaRoutes);
+app.use('/mascotas', mascotaRoutes);
 
 // Módulo M3 - Citas
 const citaRoutes = require('./src/routes/citaRoutes');
-app.use('/api/citas', citaRoutes);
+app.use('/citas', citaRoutes);
 
 // Módulo M4 - Historial Médico y Vacunas
 const historialRoutes = require('./src/routes/historialRoutes');
-app.use('/api/historial', historialRoutes);
+app.use('/historial', historialRoutes);
 
 const vacunaRoutes = require('./src/routes/vacunaRoutes');
-app.use('/api/vacunas', vacunaRoutes);
+app.use('/vacunas', vacunaRoutes);
 
 // Módulo M5 - Notificaciones
 const notificacionRoutes = require('./src/routes/notificacionRoutes');
-app.use('/api/notificaciones', notificacionRoutes);
+app.use('/notificaciones', notificacionRoutes);
 
 // Módulo M7 - Inventario
 const productoRoutes = require('./src/routes/productoRoutes');
-app.use('/api/productos', productoRoutes);
+app.use('/productos', productoRoutes);
 
 // Módulo Guardería
 const guarderiaRoutes = require('./src/routes/guarderiaRoutes');
-app.use('/api/guarderia', guarderiaRoutes);
+app.use('/guarderia', guarderiaRoutes);
 
 // ==========================================
 // 3. PROCESOS EN SEGUNDO PLANO (JOBS)

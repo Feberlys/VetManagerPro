@@ -41,9 +41,9 @@ const HistorialMedico = () => {
     const cargarDatosIniciales = async () => {
     try {
         const [productosRes, mascotasRes, clientesRes] = await Promise.all([
-            api.get('/api/productos'),
-            api.get('/api/mascotas'),
-            api.get('/api/clientes')
+            api.get('/productos'),
+            api.get('/mascotas'),
+            api.get('/clientes')
         ]);
 
         setProductos(
@@ -151,8 +151,8 @@ const HistorialMedico = () => {
 
     try {
         const [resHistorial, resVacunas] = await Promise.all([
-            api.get(`/api/historial/mascota/${mascota.MascotaId}`),
-            api.get(`/api/vacunas/mascota/${mascota.MascotaId}`)
+            api.get(`/historial/mascota/${mascota.MascotaId}`),
+            api.get(`/vacunas/mascota/${mascota.MascotaId}`)
         ]);
 
         setHistorial(resHistorial.data);

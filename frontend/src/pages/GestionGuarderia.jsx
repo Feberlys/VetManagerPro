@@ -37,9 +37,9 @@ const GestionGuarderia = () => {
   const cargarDatos = async () => {
     try {
       const [resEspacios, resDisponibles, resOcupacion] = await Promise.all([
-        api.get('/api/guarderia/espacios'),
-        api.get('/api/guarderia/espacios/disponibles'),
-        api.get('/api/guarderia/ocupacion')
+        api.get('/guarderia/espacios'),
+        api.get('/guarderia/espacios/disponibles'),
+        api.get('/guarderia/ocupacion')
       ]);
       setEspacios(resEspacios.data.data || []);
       setEspaciosDisponibles(resDisponibles.data.data || []);

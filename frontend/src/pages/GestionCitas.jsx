@@ -58,9 +58,9 @@ const GestionCitas = () => {
   const cargarDatos = async () => {
     try {
       const [citasRes, mascotasRes, productosRes] = await Promise.all([
-        api.get('/api/citas'),
-        api.get('/api/mascotas'),
-        api.get('/api/productos'),
+        api.get('/citas'),
+        api.get('/mascotas'),
+        api.get('/productos'),
       ]);
 
       setCitas(citasRes.data);
@@ -74,7 +74,7 @@ const GestionCitas = () => {
 );
 
       try {
-        const usuariosRes = await api.get('/api/usuarios/veterinarios');
+        const usuariosRes = await api.get('/usuarios/veterinarios');
         setVeterinarios(usuariosRes.data);
       } catch {
         setVeterinarios([]);
