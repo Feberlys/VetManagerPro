@@ -1,0 +1,10 @@
+[33mf4354d3[m[33m ([m[1;36mHEAD[m[33m)[m Eliminar duplicacion de ruta en auth context
+[33mb1ba0bc[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m resolve: Aceptar configuración correcta de api.js
+[33m4568eaa[m[33m ([m[1;32mmain[m[33m)[m Merge branch 'main' of https://github.com/Feberlys/VetManagerPro
+[33m3093c43[m fix: Alinear rutas frontend-backend y mejorar CORS
+[33m46eacee[m fix: Alinear rutas frontend-backend y mejorar CORS
+[33ma197240[m add: Configurar URL del backend para producción
+[33madb68d2[m fix: Mejorar CORS, agregar debugging de rutas y alinear con frontend URL
+[33m7212b99[m fix: Alinear baseURL del frontend con backend en vetmanagerpro-2.onrender.com y agregar debugging
+[33md89cbf1[m add: Configurar URL del backend para desarrollo
+[33m71d8228[m obtener cliente
