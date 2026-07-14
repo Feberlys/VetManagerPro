@@ -17,19 +17,25 @@ const transporter = nodemailer.createTransport({
 });
 
 // Esto nos dirá exactamente qué está fallando en la consola al arrancar
-transporter.verify((error, success) => {
+/*transporter.verify((error, success) => {
   if (error) {
     console.error('❌ Error detallado de SMTP:', error);
   } else {
     console.log('🚀 Servidor de correos listo para enviar notificaciones');
   }
-});
+});*/
 
 /**
  * Función núcleo (Core) - Envía cualquier correo recibiendo los parámetros básicos.
  * Esto evita repetir código de transporte en otros módulos.
  */
 const enviarEmailGenérico = async ({ para, asunto, html }) => {
+  // Verificamos si las variables existen antes de intentar enviar
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.log("⚠️ Envío de correo omitido: Credenciales no configuradas");
+      return; 
+  }
+
   const opcionesElementales = {
     from: `"VetManager Pro 🐾" <${process.env.EMAIL_USER}>`,
     to: para,
@@ -39,7 +45,6 @@ const enviarEmailGenérico = async ({ para, asunto, html }) => {
 
   return await transporter.sendMail(opcionesElementales);
 };
-
 /**
  * Plantillas específicas por Módulo
  * Aquí es donde manejas la diferente información que requiere cada pantalla.
