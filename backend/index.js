@@ -1,7 +1,6 @@
 require('dotenv').config(); // <-- TIENE QUE SER LO PRIMERO
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
 const { getConnection } = require('./src/config/db');
 
 const app = express();
@@ -14,7 +13,7 @@ const app = express();
 const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = [
-      'https://vetmanagerpro.onrender.com/api',  // Frontend URL
+      'https://vetmanagerpro.onrender.com',  // Frontend URL
       'https://vetmanagerpro-2.onrender.com', // Por si acaso
       'http://localhost:5173',                 // Desarrollo local (Vite)
       'http://localhost:3000',                 // Desarrollo local alternativo
