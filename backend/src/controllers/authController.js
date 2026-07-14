@@ -1,3 +1,8 @@
+// Agrega esto temporalmente en tu función login, justo antes de bcrypt.compare:
+console.log("Hash en DB para este usuario:", usuario.PasswordHash);
+const hashPrueba = await bcrypt.hash('vetmanager123', 10);
+console.log("Hash generado en tiempo real:", hashPrueba);
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const usuarioModel = require('../models/usuarioModel');
