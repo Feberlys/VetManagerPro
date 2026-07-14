@@ -11,7 +11,7 @@ const getBaseURL = () => {
 };
 
 const api = axios.create({
-    baseURL: 'https://vetmanagerpro.onrender.com/api', // URL base del backend
+    baseURL: 'https://vetmanagerpro.onrender.com', // URL base del backend
 });
 
 // Interceptor: Antes de que salga cualquier petición, le pega el token
