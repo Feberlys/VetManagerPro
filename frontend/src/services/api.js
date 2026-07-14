@@ -1,9 +1,7 @@
 import axios from 'axios';
 
-const api = axios.create({
-    // VITE_API_URL es para la nube. Si no existe, usa localhost.
-    baseURL: 'https://vetmanagerpro.onrender.com/api', 
-});
+const api = axios.create();
+    
 
 // Interceptor: Antes de que salga cualquier petición, le pega el token
 api.interceptors.request.use((config) => {
@@ -12,8 +10,6 @@ api.interceptors.request.use((config) => {
         config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
-}, (error) => {
-    return Promise.reject(error);
 });
 
 export default api;
