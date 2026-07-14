@@ -4,7 +4,7 @@ import axios from 'axios';
 const getBaseURL = () => {
     // En producción: usa la variable de entorno o la URL de Render del backend
     if (import.meta.env.PROD) {
-        return import.meta.env.VITE_API_URL || 'https://vetmanagerpro-2.onrender.com';
+        return import.meta.env.VITE_API_URL || 'https://vetmanagerpro.onrender.com/api';
     }
     // En desarrollo: localhost
     return 'http://localhost:3000';
