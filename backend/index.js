@@ -16,12 +16,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Inicializar la conexión a la base de datos
 getConnection();
-
-// ==========================================
-// 2. RUTAS DE LA API
-// ==========================================
 
 // Autenticación
 const authRoutes = require('./src/routes/authRoutes');

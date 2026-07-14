@@ -1,6 +1,6 @@
 const { sql, getConnection } = require('../config/db');
 
-const obtenerClientes = async () => {
+/*const obtenerClientes = async () => {
   const pool = await getConnection();
   const result = await pool.request().query(`
     SELECT ClienteId, NombreCompleto, Telefono, Correo, Direccion, Estado, FechaRegistro
@@ -8,6 +8,15 @@ const obtenerClientes = async () => {
     ORDER BY FechaRegistro DESC
   `);
   return result.recordset;
+};*/
+
+const obtenerClientes = async () => {
+    const token = localStorage.getItem('token'); // Recuperamos el token aquí
+    return await api.get('/clientes', {
+        headers: {
+            'Authorization': `Bearer ${token}` // Lo enviamos explícitamente
+        }
+    });
 };
 
 const obtenerClientePorId = async (id) => {
