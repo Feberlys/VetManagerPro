@@ -24,7 +24,7 @@ const GestionClientes = () => {
 
   const cargarClientes = async () => {
     try {
-      const response = await api.get('/api/clientes');
+      const response = await api.get('/clientes');
       setClientes(response.data);
     } catch {
       setError('Error al cargar la lista de clientes');

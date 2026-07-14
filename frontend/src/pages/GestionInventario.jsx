@@ -34,7 +34,7 @@ const GestionInventario = () => {
 
     const cargarProductos = async () => {
         try {
-            const response = await api.get('/api/productos');
+            const response = await api.get('/productos');
             setProductos(response.data);
         } catch (err) {
             setError('Error al cargar el inventario');
