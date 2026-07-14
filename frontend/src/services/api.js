@@ -1,11 +1,18 @@
 import axios from 'axios';
 
 // Determinar la URL base según el entorno
+const normalizeBaseURL = (url = '') => {
+    return url
+        .trim()
+        .replace(/\/+$|^\s+|\s+$/g, '')
+        .replace(/\/api$/i, '');
+};
+
 const getBaseURL = () => {
-    const configuredUrl = import.meta.env.VITE_API_URL?.trim();
+    const configuredUrl = import.meta.env.VITE_API_URL;
 
     if (configuredUrl) {
-        return configuredUrl.replace(/\/$/, '');
+        return normalizeBaseURL(configuredUrl);
     }
 
     return import.meta.env.PROD
@@ -23,6 +30,18 @@ api.interceptors.request.use((config) => {
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
+
+    if (config.baseURL && config.url) {
+        config.baseURL = config.baseURL.replace(/\/+$/g, '');
+        config.url = config.url.replace(/^\/*/g, '/');
+
+        if (config.baseURL.endsWith('/api') && config.url.startsWith('/api')) {
+            config.url = config.url.replace(/^\/api/, '');
+        }
+
+        config.url = config.url.replace(/\/+/g, '/');
+    }
+
     console.log('🔵 Petición:', config.method.toUpperCase(), config.baseURL + config.url);
     return config;
 }, (error) => {
