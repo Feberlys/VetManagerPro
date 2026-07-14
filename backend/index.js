@@ -34,9 +34,17 @@ const corsOptions = {
   maxAge: 86400 // 24 horas
 };
 
+
 app.use(cors(corsOptions));
 app.use(express.json());
 
+app.use(cors({
+    // IMPORTANTE: Asegúrate de que esta URL sea exactamente la de tu frontend sin espacios
+    origin: 'https://vetmanagerpro-2.onrender.com', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
 // Logging middleware para debugging
 app.use((req, res, next) => {
   console.log(`📍 ${new Date().toISOString()} - ${req.method} ${req.path}`);
