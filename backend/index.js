@@ -59,7 +59,7 @@ getConnection();
 
 // Autenticación
 const authRoutes = require('./src/routes/authRoutes');
-app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 
 // Módulo M1 - Usuarios (Feberlys)
 const usuarioRoutes = require('./src/routes/usuarioRoutes');
