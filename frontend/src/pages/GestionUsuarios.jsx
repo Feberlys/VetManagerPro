@@ -21,7 +21,7 @@ const GestionUsuarios = () => {
 
     const cargarUsuarios = async () => {
         try {
-            const response = await api.get('/usuarios');
+            const response = await api.get('/api/usuarios');
             setUsuariosLista(response.data);
         } catch {
             setError('Error al cargar la lista de usuarios');

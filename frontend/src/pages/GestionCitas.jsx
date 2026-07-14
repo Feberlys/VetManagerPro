@@ -74,7 +74,7 @@ const GestionCitas = () => {
 );
 
       try {
-        const usuariosRes = await api.get('/usuarios/veterinarios');
+        const usuariosRes = await api.get('/api/usuarios/veterinarios');
         setVeterinarios(usuariosRes.data);
       } catch {
         setVeterinarios([]);
