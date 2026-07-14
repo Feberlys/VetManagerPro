@@ -63,14 +63,14 @@ app.use('/api/auth', authRoutes);
 
 // Módulo M1 - Usuarios (Feberlys)
 const usuarioRoutes = require('./src/routes/usuarioRoutes');
-app.use('/usuarios', usuarioRoutes);
+app.use('/api/usuarios', usuarioRoutes);
 
 // Módulo M2 - Clientes y Mascotas 
 const clienteRoutes = require('./src/routes/clienteRoutes');
-app.use('/clientes', clienteRoutes);
+app.use('/api/clientes', clienteRoutes);
 
 const mascotaRoutes = require('./src/routes/mascotaRoutes');
-app.use('/mascotas', mascotaRoutes);
+app.use('/api/mascotas', mascotaRoutes);
 
 // Módulo M3 - Citas
 const citaRoutes = require('./src/routes/citaRoutes');
