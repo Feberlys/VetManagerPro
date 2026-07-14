@@ -37,13 +37,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-app.use(cors({
-    // IMPORTANTE: Asegúrate de que esta URL sea exactamente la de tu frontend sin espacios
-    origin: 'https://vetmanagerpro-2.onrender.com', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-}));
 // Logging middleware para debugging
 app.use((req, res, next) => {
   console.log(`📍 ${new Date().toISOString()} - ${req.method} ${req.path}`);
@@ -53,46 +46,50 @@ app.use((req, res, next) => {
 getConnection();
 
 // ==========================================
-// 2. RUTAS (SIN duplicar /api)
+// 2. RUTAS (compatibles con /api y sin prefijo)
 // ==========================================
+const mountRoute = (path, router) => {
+  app.use(path, router);
+  app.use(`/api${path}`, router);
+};
 
 // Autenticación
 const authRoutes = require('./src/routes/authRoutes');
-app.use('/api/auth', authRoutes);
+mountRoute('/auth', authRoutes);
 
 // Módulo M1 - Usuarios (Feberlys)
 const usuarioRoutes = require('./src/routes/usuarioRoutes');
-app.use('/usuarios', usuarioRoutes);
+mountRoute('/usuarios', usuarioRoutes);
 
 // Módulo M2 - Clientes y Mascotas 
 const clienteRoutes = require('./src/routes/clienteRoutes');
-app.use('/clientes', clienteRoutes);
+mountRoute('/clientes', clienteRoutes);
 
 const mascotaRoutes = require('./src/routes/mascotaRoutes');
-app.use('/api/mascotas', mascotaRoutes);
+mountRoute('/mascotas', mascotaRoutes);
 
 // Módulo M3 - Citas
 const citaRoutes = require('./src/routes/citaRoutes');
-app.use('/api/citas', citaRoutes);
+mountRoute('/citas', citaRoutes);
 
 // Módulo M4 - Historial Médico y Vacunas
 const historialRoutes = require('./src/routes/historialRoutes');
-app.use('/api/historial', historialRoutes);
+mountRoute('/historial', historialRoutes);
 
 const vacunaRoutes = require('./src/routes/vacunaRoutes');
-app.use('/api/vacunas', vacunaRoutes);
+mountRoute('/vacunas', vacunaRoutes);
 
 // Módulo M5 - Notificaciones
 const notificacionRoutes = require('./src/routes/notificacionRoutes');
-app.use('/api/notificaciones', notificacionRoutes);
+mountRoute('/notificaciones', notificacionRoutes);
 
 // Módulo M7 - Inventario
 const productoRoutes = require('./src/routes/productoRoutes');
-app.use('/productos', productoRoutes);
+mountRoute('/productos', productoRoutes);
 
 // Módulo Guardería
 const guarderiaRoutes = require('./src/routes/guarderiaRoutes');
-app.use('/api/guarderia', guarderiaRoutes);
+mountRoute('/guarderia', guarderiaRoutes);
 
 // ==========================================
 // 3. PROCESOS EN SEGUNDO PLANO (JOBS)
