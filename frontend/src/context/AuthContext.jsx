@@ -7,16 +7,24 @@ export const AuthProvider = ({ children }) => {
     const [usuario, setUsuario] = useState(null);
     const [cargando, setCargando] = useState(true);
 
-    // Revisar si ya hay una sesión guardada al abrir la app
     useEffect(() => {
         const token = localStorage.getItem('token');
         const user = localStorage.getItem('usuario');
+
         if (token && user) {
-            setUsuario(JSON.parse(user));
+            try {
+                // Intentamos parsear, si falla, limpiamos para evitar que la app muera
+                setUsuario(JSON.parse(user));
+            } catch (error) {
+                console.error("Error al leer el usuario del localStorage:", error);
+                localStorage.removeItem('token');
+                localStorage.removeItem('usuario');
+                setUsuario(null);
+            }
         }
         setCargando(false);
     }, []);
-
+    
     const login = async (correo, password) => {
         try {
             const response = await api.post('/auth/login', { correo, password },{headers: { 'Content-Type': 'application/json' }});
