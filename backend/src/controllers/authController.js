@@ -28,18 +28,22 @@ const registrar = async (req, res) => {
 };
 
 const login = async (req, res) => {
-    console.log("Datos recibidos:", req.body); // Log para depuración
+    console.log("Datos recibidos:", req.body);
     try {
         const { correo, password } = req.body;
 
-        // 1. Buscar si el usuario existe
+        // 1. Buscar usuario
         const usuario = await usuarioModel.buscarUsuarioPorCorreo(correo);
+        console.log("Usuario encontrado en DB:", usuario ? "Sí" : "No");
+        
         if (!usuario) {
             return res.status(400).json({ error: 'Credenciales inválidas' });
         }
 
-        // 2. Comparar la contraseña enviada con el Hash de la base de datos
+        // 2. Comparar contraseña
         const passwordValido = await bcrypt.compare(password, usuario.PasswordHash);
+        console.log("¿Contraseña válida?:", passwordValido);
+        
         if (!passwordValido) {
             return res.status(400).json({ error: 'Credenciales inválidas' });
         }
