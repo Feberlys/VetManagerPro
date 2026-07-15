@@ -1,14 +1,16 @@
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT, 10),
+  host: 'smtp-relay.brevo.com',
+  port: 587,
   secure: false,
   auth: {
-    user: (process.env.EMAIL_USER || '').trim(),
-    pass: (process.env.EMAIL_PASS || '').trim()
+    user: 'b2261b001@smtp-brevo.com',
+    pass: process.env.EMAIL_PASS.trim() // Solo mantenemos la contraseña como variable
   }
 });
+
+
 
 const enviarEmailGenérico = async ({ para, asunto, html }) => {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
