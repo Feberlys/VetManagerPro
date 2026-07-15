@@ -6,16 +6,14 @@ const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
   port: port,
   secure: port === 465,
-  dnsTimeout: 5000, // 10 segundos
-  socketTimeout: 10000, // 10 segundos
+  family: 4, // Forzar IPv4
   auth: {
     user: process.env.EMAIL_USER?.trim(),
     pass: process.env.EMAIL_PASS?.trim() 
   },
   tls: {
     rejectUnauthorized: false 
-  },
-  family: 4
+  }
 });
 
 const enviarEmailGenérico = async ({ para, asunto, html }) => {
