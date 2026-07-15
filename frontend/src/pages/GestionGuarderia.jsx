@@ -11,7 +11,7 @@ const Toast = Swal.mixin({
   showConfirmButton: false,
   timer: 3000,
   timerProgressBar: true,
-  iconColor: '#059669', // <- Agrega esto para que el check sea verde esmeralda
+  iconColor: '#059669', 
   didOpen: (toast) => {
     toast.addEventListener('mouseenter', Swal.stopTimer);
     toast.addEventListener('mouseleave', Swal.resumeTimer);
@@ -26,6 +26,11 @@ const GestionGuarderia = () => {
   const [espaciosDisponibles, setEspaciosDisponibles] = useState([]);
   const [ocupacion, setOcupacion] = useState([]);
 
+  // Estados para el buscador de mascotas
+  const [mascotas, setMascotas] = useState([]);
+  const [busquedaMascota, setBusquedaMascota] = useState('');
+  const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
+
   const [formEspacio, setFormEspacio] = useState({
     numeroEspacio: '', tipo: 'Pequeño', precioPorNoche: ''
   });
@@ -36,14 +41,17 @@ const GestionGuarderia = () => {
 
   const cargarDatos = async () => {
     try {
-      const [resEspacios, resDisponibles, resOcupacion] = await Promise.all([
+      // Corrección: Faltaba una coma y agregar resMascotas al arreglo
+      const [resEspacios, resDisponibles, resOcupacion, resMascotas] = await Promise.all([
         api.get('/guarderia/espacios'),
         api.get('/guarderia/espacios/disponibles'),
-        api.get('/guarderia/ocupacion')
+        api.get('/guarderia/ocupacion'),
+        api.get('/mascotas')
       ]);
       setEspacios(resEspacios.data.data || []);
       setEspaciosDisponibles(resDisponibles.data.data || []);
       setOcupacion(resOcupacion.data.data || []);
+      setMascotas(resMascotas.data.data || resMascotas.data || []);
     } catch (error) {
       console.error(error);
       Toast.fire({
@@ -97,7 +105,9 @@ const GestionGuarderia = () => {
         icon: 'success',
         title: 'Check-in realizado correctamente.'
       });
+      // Limpiar formulario y buscador tras el éxito
       setFormCheckIn({ mascotaId: '', espacioId: '', fechaEntrada: '', fechaSalidaEstimada: '', notasEspeciales: '' });
+      setBusquedaMascota('');
       cargarDatos();
     } catch (error) {
       console.error(error);
@@ -127,7 +137,7 @@ const GestionGuarderia = () => {
             title: '¡Check-out realizado!',
             text: `Total a cobrar: RD$ ${res.data.data.totalCobrar}`,
             icon: 'success',
-            iconColor: '#059669', // <- Agrega esto aquí también
+            iconColor: '#059669', 
             confirmButtonColor: '#059669'
           });
           
@@ -164,7 +174,52 @@ const GestionGuarderia = () => {
               <LogIn className="text-emerald-600" size={20} /> Hacer Check-in
             </h2>
             <form onSubmit={hacerCheckIn} className="space-y-4">
-              <input type="number" name="mascotaId" placeholder="ID de la mascota" value={formCheckIn.mascotaId} onChange={handleCheckInChange} required className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" />
+              
+              {/* BUSCADOR INTELIGENTE DE MASCOTAS INTEGRADO */}
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="Buscar por mascota o dueño..." 
+                  value={busquedaMascota} 
+                  onChange={(e) => {
+                    setBusquedaMascota(e.target.value);
+                    setMostrarSugerencias(true);
+                    // Resetea el ID si el usuario empieza a borrar
+                    setFormCheckIn({ ...formCheckIn, mascotaId: '' });
+                  }} 
+                  required={!formCheckIn.mascotaId}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" 
+                />
+                
+                {/* LISTA DE SUGERENCIAS */}
+                {mostrarSugerencias && busquedaMascota && (
+                  <ul className="absolute z-10 w-full bg-white border border-gray-200 mt-1 max-h-40 overflow-y-auto rounded-xl shadow-lg">
+                    {mascotas
+                      .filter(m => 
+                        m.Nombre?.toLowerCase().includes(busquedaMascota.toLowerCase()) || 
+                        m.NombreCliente?.toLowerCase().includes(busquedaMascota.toLowerCase())
+                      )
+                      .map(m => (
+                        <li 
+                          key={m.MascotaId} 
+                          onClick={() => {
+                            // Al hacer clic, guarda el ID real y muestra el nombre en el input
+                            setFormCheckIn({ ...formCheckIn, mascotaId: m.MascotaId });
+                            setBusquedaMascota(`${m.Nombre} (Dueño: ${m.NombreCliente || 'N/A'})`);
+                            setMostrarSugerencias(false);
+                          }} 
+                          className="px-4 py-2 hover:bg-emerald-50 text-sm cursor-pointer border-b border-gray-50 last:border-0"
+                        >
+                          <strong className="text-gray-900">{m.Nombre}</strong> - Dueño: <span className="text-gray-600">{m.NombreCliente || 'N/A'}</span>
+                        </li>
+                    ))}
+                    {mascotas.filter(m => m.Nombre?.toLowerCase().includes(busquedaMascota.toLowerCase()) || m.NombreCliente?.toLowerCase().includes(busquedaMascota.toLowerCase())).length === 0 && (
+                      <li className="px-4 py-2 text-sm text-gray-500">No se encontraron mascotas</li>
+                    )}
+                  </ul>
+                )}
+              </div>
+
               <select name="espacioId" value={formCheckIn.espacioId} onChange={handleCheckInChange} required className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all">
                 <option value="">Seleccione un espacio disponible</option>
                 {espaciosDisponibles.map((espacio) => (

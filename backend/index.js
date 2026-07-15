@@ -27,7 +27,7 @@ const corsOptions = {
       callback(new Error('No permitido por CORS'));
     }
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true, // Si usas cookies/auth
   maxAge: 86400 // 24 horas
@@ -37,7 +37,7 @@ const corsOptions = {
 app.use(cors({
     // DEBE SER EL DOMINIO DEL FRONTEND (con el -2)
     origin: 'https://vetmanagerpro-2.onrender.com', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
