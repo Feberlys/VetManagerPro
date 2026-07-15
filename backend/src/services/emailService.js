@@ -5,32 +5,17 @@ const port = parseInt(process.env.EMAIL_PORT, 10) || 465;
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
   port: port,
-  secure: port === 465, // Si es 465 usa SSL directo automáticamente
+  secure: port === 465,
   auth: {
     user: process.env.EMAIL_USER?.trim(),
-    pass: process.env.EMAIL_PASS?.trim() // El .trim() elimina espacios o saltos de línea invisibles del .env
+    pass: process.env.EMAIL_PASS?.trim() 
   },
   tls: {
-    // Esto evita que Node.js rechace la conexión si hay temas con el certificado SSL local
     rejectUnauthorized: false 
   }
 });
 
-// Esto nos dirá exactamente qué está fallando en la consola al arrancar
-/*transporter.verify((error, success) => {
-  if (error) {
-    console.error('❌ Error detallado de SMTP:', error);
-  } else {
-    console.log('🚀 Servidor de correos listo para enviar notificaciones');
-  }
-});*/
-
-/**
- * Función núcleo (Core) - Envía cualquier correo recibiendo los parámetros básicos.
- * Esto evita repetir código de transporte en otros módulos.
- */
 const enviarEmailGenérico = async ({ para, asunto, html }) => {
-  // Verificamos si las variables existen antes de intentar enviar
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
       console.log("⚠️ Envío de correo omitido: Credenciales no configuradas");
       return; 
@@ -45,12 +30,8 @@ const enviarEmailGenérico = async ({ para, asunto, html }) => {
 
   return await transporter.sendMail(opcionesElementales);
 };
-/**
- * Plantillas específicas por Módulo
- * Aquí es donde manejas la diferente información que requiere cada pantalla.
- */
 
-// --- MÓDULO 6: GUARDERÍA ---
+// --- MÓDULO: GUARDERÍA (CHECK-OUT) ---
 const enviarCorreoRecogida = async (correoCliente, nombreCliente, nombreMascota, totalCobrar, noches, precioPorNoche) => {
   const plantillaHTML = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
@@ -71,9 +52,6 @@ const enviarCorreoRecogida = async (correoCliente, nombreCliente, nombreMascota,
 
         <p>Gracias por confiar el cuidado de tu compañero en VetManager Pro.</p>
       </div>
-      <div style="background-color: #f3f4f6; padding: 12px; text-align: center; font-size: 12px; color: #6b7280;">
-        © 2026 VetManager Pro. Todos los derechos reservados.
-      </div>
     </div>
   `;
 
@@ -84,7 +62,7 @@ const enviarCorreoRecogida = async (correoCliente, nombreCliente, nombreMascota,
   });
 };
 
-// --- NUEVO: CORREO DE CHECK-IN ---
+// --- MÓDULO: GUARDERÍA (CHECK-IN) ---
 const enviarCorreoCheckIn = async (correoCliente, nombreCliente, nombreMascota, fechaEntrada, fechaSalidaEstimada) => {
   const plantillaHTML = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
@@ -109,23 +87,7 @@ const enviarCorreoCheckIn = async (correoCliente, nombreCliente, nombreMascota, 
   });
 };
 
-// --- NUEVO: CORREO RECORDATORIO DE CHECK-OUT ---
-const enviarCorreoRecordatorioCheckout = async (correoCliente, nombreCliente, nombreMascota) => {
-  const plantillaHTML = `<h1>Recordatorio de Recogida 🐾</h1><p>Hola ${nombreCliente}, te recordamos que mañana está programada la salida de ${nombreMascota} de nuestra guardería.</p>`;
-  return await enviarEmailGenérico({
-    para: correoCliente, asunto: `Recordatorio de recogida de ${nombreMascota}`, html: plantillaHTML
-  });
-};
-
-// No olvides exportarlas al final del archivo:
-module.exports = {
-  enviarCorreoRecogida,
-  enviarCorreoCheckIn,
-  enviarCorreoRecordatorioCita,
-  enviarCorreoRecordatorioCheckout
-};
-
-// --- EJEMPLO PARA FUTUROS MÓDULOS (Citas, Facturas, etc.) ---
+// --- RECORDATORIOS AUTOMÁTICOS ---
 const enviarCorreoRecordatorioCita = async (correoCliente, nombreCliente, fechaCita) => {
   const plantillaHTML = `<h1>Recordatorio de Cita</h1><p>Hola ${nombreCliente}, te esperamos el ${fechaCita}.</p>`;
   return await enviarEmailGenérico({
@@ -135,7 +97,19 @@ const enviarCorreoRecordatorioCita = async (correoCliente, nombreCliente, fechaC
   });
 };
 
+const enviarCorreoRecordatorioCheckout = async (correoCliente, nombreCliente, nombreMascota) => {
+  const plantillaHTML = `<h1>Recordatorio de Recogida 🐾</h1><p>Hola ${nombreCliente}, te recordamos que mañana está programada la salida de ${nombreMascota} de nuestra guardería.</p>`;
+  return await enviarEmailGenérico({
+    para: correoCliente, 
+    asunto: `Recordatorio de recogida de ${nombreMascota}`, 
+    html: plantillaHTML
+  });
+};
+
+// Exportamos todo AL FINAL del archivo para evitar el ReferenceError
 module.exports = {
   enviarCorreoRecogida,
-  enviarCorreoRecordatorioCita // Lo exportas conforme lo vayas necesitando
+  enviarCorreoCheckIn,
+  enviarCorreoRecordatorioCita,
+  enviarCorreoRecordatorioCheckout
 };
