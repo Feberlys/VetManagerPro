@@ -11,13 +11,15 @@ const transporter = nodemailer.createTransport({
 
 // Esta función es ahora "blindada": si falla, no detiene el servidor
 const enviarEmailGenérico = async (opciones) => {
-  try {
-    if (!process.env.EMAIL_PASS) return; // Si no hay pass, no hacemos nada
-    return await transporter.sendMail(opciones);
-  } catch (error) {
-    console.error("⚠️ Correo fallido (omitido para no detener el sistema):", error.message);
-    return; // Retornamos vacío para que el flujo siga
-  }
+  // Quitamos el 'await' del envío y lo gestionamos de forma independiente
+  if (!process.env.EMAIL_PASS) return;
+
+  transporter.sendMail(opciones)
+    .then(() => console.log("✅ Correo enviado con éxito"))
+    .catch((error) => console.error("⚠️ Error silencioso en correo:", error.message));
+  
+  // Retornamos inmediatamente para que el checkout no se bloquee
+  return;
 };
 
 // Tus funciones ahora usan ese blindaje automáticamente
