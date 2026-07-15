@@ -37,6 +37,17 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// Corregir rutas con doble /api/api/ antes de montar las rutas
+app.use((req, res, next) => {
+  if (/^\/api\/api(\/|$)/.test(req.url)) {
+    const correctedUrl = req.url.replace(/^\/api\/api/, '/api');
+    console.warn(`⚠️ Corrigiendo ruta duplicada: ${req.url} -> ${correctedUrl}`);
+    req.url = correctedUrl;
+  }
+
+  next();
+});
+
 // Logging middleware para debugging
 app.use((req, res, next) => {
   console.log(`📍 ${new Date().toISOString()} - ${req.method} ${req.path}`);
