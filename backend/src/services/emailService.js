@@ -1,5 +1,7 @@
-const nodemailer = require('nodemailer');
 const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
+const nodemailer = require('nodemailer');
+
 
 // FORZAR IPv4: Esta es la pieza clave para que Render no falle al conectar con Gmail
 dns.setDefaultResultOrder('ipv4first');
@@ -12,6 +14,7 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER?.trim(),
     pass: process.env.EMAIL_PASS?.trim()
   },
+  secure:true,
   // Ajustes de seguridad mínimos para evitar bloqueos
   tls: {
     rejectUnauthorized: false
