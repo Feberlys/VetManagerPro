@@ -1,6 +1,6 @@
 const cron = require("node-cron");
 const emailService = require('../services/emailService');
-const { getConnection } = require('/config/db'); // Ajusta la ruta a tu archivo de conexión BD
+const { getConnection } = require('../config/db'); // Ajusta la ruta a tu archivo de conexión BD
 
 function iniciarNotificacionesAutomaticas() {
   // Se ejecuta todos los días a las 8:00 AM hora del servidor
