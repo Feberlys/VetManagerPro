@@ -168,12 +168,32 @@ const hacerCheckIn = async (req, res) => {
     }
 
     const hospedaje = await guarderiaModel.hacerCheckIn(
-      Number(mascotaId),
-      Number(espacioId),
-      entrada,
-      salidaEstimada,
-      notasEspeciales
+      Number(mascotaId), Number(espacioId), entrada, salidaEstimada, notasEspeciales
     );
+
+    // --- NUEVO: ENVÍO DE CORREO DE CHECK-IN ---
+    try {
+      // Validamos si el modelo nos devolvió el correo, de lo contrario no enviamos nada
+      if (hospedaje && hospedaje.Correo) {
+        await emailService.enviarCorreoCheckIn(
+          hospedaje.Correo,
+          hospedaje.NombreCliente,
+          hospedaje.NombreMascota,
+          entrada,
+          salidaEstimada
+        );
+        console.log(`📧 Correo de check-in enviado a ${hospedaje.Correo}`);
+      }
+    } catch (emailError) {
+      console.error('⚠️ Error al enviar el correo de check-in:', emailError.message);
+    }
+    // ------------------------------------------
+
+    res.status(201).json({
+      success: true,
+      message: 'Check-in realizado correctamente.',
+      data: hospedaje
+    });
 
     res.status(201).json({
       success: true,

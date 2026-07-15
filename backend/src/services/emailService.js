@@ -84,6 +84,47 @@ const enviarCorreoRecogida = async (correoCliente, nombreCliente, nombreMascota,
   });
 };
 
+// --- NUEVO: CORREO DE CHECK-IN ---
+const enviarCorreoCheckIn = async (correoCliente, nombreCliente, nombreMascota, fechaEntrada, fechaSalidaEstimada) => {
+  const plantillaHTML = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+      <div style="background-color: #059669; padding: 24px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">¡Check-in Exitoso! 🐾</h1>
+      </div>
+      <div style="padding: 24px; color: #374151; line-height: 1.6;">
+        <p>Hola <strong>${nombreCliente}</strong>,</p>
+        <p>Te confirmamos que <strong>${nombreMascota}</strong> ha ingresado a nuestra guardería de forma segura.</p>
+        <div style="background-color: #f9fafb; border: 1px solid #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 6px 0;"><strong>Fecha de entrada:</strong> ${new Date(fechaEntrada).toLocaleDateString()}</p>
+          <p style="margin: 6px 0;"><strong>Salida estimada:</strong> ${new Date(fechaSalidaEstimada).toLocaleDateString()}</p>
+        </div>
+        <p>¡Cuidaremos muy bien de tu compañero!</p>
+      </div>
+    </div>
+  `;
+  return await enviarEmailGenérico({
+    para: correoCliente,
+    asunto: `Check-in de ${nombreMascota} - VetManager Pro`,
+    html: plantillaHTML
+  });
+};
+
+// --- NUEVO: CORREO RECORDATORIO DE CHECK-OUT ---
+const enviarCorreoRecordatorioCheckout = async (correoCliente, nombreCliente, nombreMascota) => {
+  const plantillaHTML = `<h1>Recordatorio de Recogida 🐾</h1><p>Hola ${nombreCliente}, te recordamos que mañana está programada la salida de ${nombreMascota} de nuestra guardería.</p>`;
+  return await enviarEmailGenérico({
+    para: correoCliente, asunto: `Recordatorio de recogida de ${nombreMascota}`, html: plantillaHTML
+  });
+};
+
+// No olvides exportarlas al final del archivo:
+module.exports = {
+  enviarCorreoRecogida,
+  enviarCorreoCheckIn,
+  enviarCorreoRecordatorioCita,
+  enviarCorreoRecordatorioCheckout
+};
+
 // --- EJEMPLO PARA FUTUROS MÓDULOS (Citas, Facturas, etc.) ---
 const enviarCorreoRecordatorioCita = async (correoCliente, nombreCliente, fechaCita) => {
   const plantillaHTML = `<h1>Recordatorio de Cita</h1><p>Hola ${nombreCliente}, te esperamos el ${fechaCita}.</p>`;
