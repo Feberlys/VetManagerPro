@@ -4,7 +4,7 @@ const { getConnection } = require('../config/db'); // Ajusta la ruta a tu archiv
 
 function iniciarNotificacionesAutomaticas() {
   // Se ejecuta todos los días a las 8:00 AM hora del servidor
-  cron.schedule("*  * * * *", async () => {
+  cron.schedule("0 8 * * *", async () => {
     console.log("⏰ Iniciando trabajo automático de notificaciones...");
     try {
       const pool = await getConnection();
