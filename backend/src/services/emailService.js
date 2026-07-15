@@ -7,19 +7,14 @@ dns.setDefaultResultOrder('ipv4first');
 const port = parseInt(process.env.EMAIL_PORT, 10) || 465;
 
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port: port,
-  secure: port === 465,
-  family: 4, // Fuerza el uso de IPv4 en la conexión SMTP
-  connectionTimeout: 20000, // 20 segundos antes de dar timeout
-  greetingTimeout: 10000,   // 10 segundos para saludar al servidor
-  socketTimeout: 30000,     // 30 segundos de tiempo de vida del socket
+  service: 'gmail', // Esto simplifica todo el proceso de conexión
   auth: {
     user: process.env.EMAIL_USER?.trim(),
-    pass: process.env.EMAIL_PASS?.trim() 
+    pass: process.env.EMAIL_PASS?.trim()
   },
+  // Ajustes de seguridad mínimos para evitar bloqueos
   tls: {
-    rejectUnauthorized: false 
+    rejectUnauthorized: false
   }
 });
 
