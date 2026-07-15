@@ -9,13 +9,15 @@ dns.setDefaultResultOrder('ipv4first');
 const port = parseInt(process.env.EMAIL_PORT, 10) || 465;
 
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT, 10),
+  host: process.env.EMAIL_HOST, // Asegúrate de que en Render sea: smtp-relay.brevo.com
+  port: parseInt(process.env.EMAIL_PORT, 10), // 587
+  secure: false, // Brevo con puerto 587 usa STARTTLS, no conexión segura directa
   auth: {
     user: process.env.EMAIL_USER.trim(),
     pass: process.env.EMAIL_PASS.trim()
   },
-  // Brevo no necesita TLS: false o family: 4, funciona nativo
+  // Esto permite que la conexión se inicie de forma insegura y luego se cifre
+  requireTLS: true 
 });
 
 const enviarEmailGenérico = async ({ para, asunto, html }) => {
