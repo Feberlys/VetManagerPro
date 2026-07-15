@@ -10,14 +10,14 @@ const obtenerClientes = async () => {
   return result.recordset;
 };
 
-/*const obtenerClientes = async () => {
+const obtenerClientes = async () => {
     const token = localStorage.getItem('token'); // Recuperamos el token aquí
     return await api.get('/clientes', {
         headers: {
             'Authorization': `Bearer ${token}` // Lo enviamos explícitamente
         }
     });
-};*/
+};
 
 const obtenerClientePorId = async (id) => {
   const pool = await getConnection();

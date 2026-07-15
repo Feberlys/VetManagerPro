@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }) => {
         const token = localStorage.getItem('token');
         const user = localStorage.getItem('usuario');
 
-        if (token && user) {
+        if (token && user && user !== 'undefined' && user !== 'null') {
             try {
                 // Intentamos parsear, si falla, limpiamos para evitar que la app muera
                 setUsuario(JSON.parse(user));
@@ -21,7 +21,16 @@ export const AuthProvider = ({ children }) => {
                 localStorage.removeItem('usuario');
                 setUsuario(null);
             }
+        } else {
+            if (user && (user === 'undefined' || user === 'null')) {
+                localStorage.removeItem('usuario');
+            }
+            if (!token) {
+                localStorage.removeItem('token');
+            }
+            setUsuario(null);
         }
+
         setCargando(false);
     }, []);
     
