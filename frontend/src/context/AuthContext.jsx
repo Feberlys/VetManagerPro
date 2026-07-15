@@ -13,8 +13,13 @@ export const AuthProvider = ({ children }) => {
 
         if (token && user && user !== 'undefined' && user !== 'null') {
             try {
-                // Intentamos parsear, si falla, limpiamos para evitar que la app muera
-                setUsuario(JSON.parse(user));
+                const parsedUser = JSON.parse(user);
+
+                if (!parsedUser || typeof parsedUser !== 'object') {
+                    throw new Error('Usuario inválido en localStorage');
+                }
+
+                setUsuario(parsedUser);
             } catch (error) {
                 console.error("Error al leer el usuario del localStorage:", error);
                 localStorage.removeItem('token');
@@ -26,6 +31,9 @@ export const AuthProvider = ({ children }) => {
                 localStorage.removeItem('usuario');
             }
             if (!token) {
+                localStorage.removeItem('token');
+            }
+            if (token && !user) {
                 localStorage.removeItem('token');
             }
             setUsuario(null);
