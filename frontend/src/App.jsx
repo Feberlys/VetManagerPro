@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from './context/AuthContext';
 import Login from './pages/Login';
@@ -21,7 +21,7 @@ const RutaProtegida = ({ children }) => {
 
 function App() {
     return (
-        <BrowserRouter>
+        <HashRouter>
             <Routes>
                 <Route path="/" element={<Login />} />
 
@@ -34,7 +34,7 @@ function App() {
                 <Route path="/historial" element={<RutaProtegida><HistorialMedico /></RutaProtegida>} />
                 <Route path="/guarderia" element={<RutaProtegida><GestionGuarderia /></RutaProtegida>} />
             </Routes>
-        </BrowserRouter>
+        </HashRouter>
     );
 }
 

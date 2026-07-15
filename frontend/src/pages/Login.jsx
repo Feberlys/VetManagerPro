@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { Dog, Cat, Mail, Lock } from 'lucide-react';
@@ -8,8 +8,14 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     
-    const { login } = useContext(AuthContext);
+    const { login, usuario } = useContext(AuthContext);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (usuario) {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [usuario, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
