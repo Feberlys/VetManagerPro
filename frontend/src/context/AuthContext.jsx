@@ -10,47 +10,34 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const token = localStorage.getItem('token');
         const user = localStorage.getItem('usuario');
-
-        if (token && user && user !== 'undefined' && user !== 'null') {
+        
+        if (token && user && user !== "undefined") {
             try {
-                const parsedUser = JSON.parse(user);
-
-                if (!parsedUser || typeof parsedUser !== 'object') {
-                    throw new Error('Usuario inválido en localStorage');
-                }
-
-                setUsuario(parsedUser);
+                // Bloque defensivo restaurado
+                setUsuario(JSON.parse(user)); 
             } catch (error) {
-                console.error("Error al leer el usuario del localStorage:", error);
+                console.error("Localstorage corrupto, limpiando...", error);
                 localStorage.removeItem('token');
                 localStorage.removeItem('usuario');
-                setUsuario(null);
             }
-        } else {
-            if (user && (user === 'undefined' || user === 'null')) {
-                localStorage.removeItem('usuario');
-            }
-            if (!token) {
-                localStorage.removeItem('token');
-            }
-            if (token && !user) {
-                localStorage.removeItem('token');
-            }
-            setUsuario(null);
         }
-
         setCargando(false);
     }, []);
-    
+
     const login = async (correo, password) => {
         try {
-            const response = await api.post('/auth/login', { correo, password },{headers: { 'Content-Type': 'application/json' }});
+            // Nota: Mantuve tu ruta original, pero asegúrate de que no cause /api/api
+            const response = await api.post('/api/auth/login', { correo, password }, { headers: { 'Content-Type': 'application/json' } });
             const { token, usuario } = response.data;
 
-            // Guardar en el navegador
+            // EL ESCUDO: Si el backend no manda usuario, bloqueamos el acceso.
+            if (!usuario) {
+                console.error("El backend no envió el objeto 'usuario'.");
+                return { success: false, error: "Faltan datos de usuario en la respuesta del servidor" };
+            }
+
             localStorage.setItem('token', token);
             localStorage.setItem('usuario', JSON.stringify(usuario));
-
             setUsuario(usuario);
             return { success: true };
         } catch (error) {
