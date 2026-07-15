@@ -18,12 +18,7 @@ const Login = () => {
         const result = await login(correo, password);
         if (result.success) {
             console.log('Login OK, navegando a dashboard');
-            navigate('/dashboard');
-            setTimeout(() => {
-                if (window.location.pathname !== '/dashboard') {
-                    window.location.href = '/dashboard';
-                }
-            }, 300);
+            navigate('/dashboard', { replace: true });
         } else {
             setError(result.error);
         }
