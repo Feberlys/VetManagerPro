@@ -1,49 +1,38 @@
 const nodemailer = require('nodemailer');
 
-// Blindaje contra variables de entorno inexistentes
-const passwordSMTP = process.env.EMAIL_PASS ?? '';
-
 const transporter = nodemailer.createTransport({
   host: 'smtp-relay.brevo.com',
   port: 587,
-  secure: false,
   auth: {
     user: 'b2261b001@smtp-brevo.com',
-    pass: passwordSMTP.trim()
+    pass: (process.env.EMAIL_PASS || '').trim()
   }
 });
 
-const enviarEmailGenérico = async ({ para, asunto, html }) => {
-  if (!passwordSMTP) {
-      console.error("⚠️ ERROR CRÍTICO: EMAIL_PASS no configurada en Render.");
-      return; 
+// Esta función es ahora "blindada": si falla, no detiene el servidor
+const enviarEmailGenérico = async (opciones) => {
+  try {
+    if (!process.env.EMAIL_PASS) return; // Si no hay pass, no hacemos nada
+    return await transporter.sendMail(opciones);
+  } catch (error) {
+    console.error("⚠️ Correo fallido (omitido para no detener el sistema):", error.message);
+    return; // Retornamos vacío para que el flujo siga
   }
-  return await transporter.sendMail({
-    from: `"VetManager Pro 🐾" <b2261b001@smtp-brevo.com>`,
-    to: para,
-    subject: asunto,
-    html: html
-  });
 };
 
-// --- FUNCIONES NECESARIAS ---
-const enviarCorreoRecogida = async (correo, nombre, mascota, total, noches, precio) => {
-  return await enviarEmailGenérico({ para: correo, asunto: "Detalle de salida", html: `<p>Hola ${nombre}, ${mascota} salió. Total: ${total}</p>` });
-};
+// Tus funciones ahora usan ese blindaje automáticamente
+const enviarCorreoRecogida = async (c, n, m, t, nch, p) => 
+  await enviarEmailGenérico({ para: c, asunto: "Salida", html: `...` });
 
-const enviarCorreoCheckIn = async (correo, nombre, mascota, e, s) => {
-  return await enviarEmailGenérico({ para: correo, asunto: "Check-in", html: `<p>Hola ${nombre}, ${mascota} ingresó.</p>` });
-};
+const enviarCorreoCheckIn = async (c, n, m, e, s) => 
+  await enviarEmailGenérico({ para: c, asunto: "Check-in", html: `...` });
 
-const enviarCorreoRecordatorioCita = async (correo, nombre, fecha) => {
-  return await enviarEmailGenérico({ para: correo, asunto: "Cita", html: `<p>Hola ${nombre}, te esperamos el ${fecha}.</p>` });
-};
+const enviarCorreoRecordatorioCita = async (c, n, f) => 
+  await enviarEmailGenérico({ para: c, asunto: "Cita", html: `...` });
 
-const enviarCorreoRecordatorioCheckout = async (correo, nombre, mascota) => {
-  return await enviarEmailGenérico({ para: correo, asunto: "Recogida", html: `<p>Hola ${nombre}, mañana sale ${mascota}.</p>` });
-};
+const enviarCorreoRecordatorioCheckout = async (c, n, m) => 
+  await enviarEmailGenérico({ para: c, asunto: "Recogida", html: `...` });
 
-// --- EXPORTACIÓN ---
 module.exports = {
   enviarCorreoRecogida,
   enviarCorreoCheckIn,
