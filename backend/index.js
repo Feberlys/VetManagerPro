@@ -91,7 +91,6 @@ mountRoute('/productos', productoRoutes);
 const guarderiaRoutes = require('./src/routes/guarderiaRoutes');
 mountRoute('/guarderia', guarderiaRoutes);
 
-<<<<<<< HEAD
 // ==========================================
 // 3. PROCESOS EN SEGUNDO PLANO (JOBS)
 // ==========================================
@@ -101,12 +100,10 @@ iniciarNotificacionesAutomaticas();
 // ==========================================
 // 4. MANEJO DE ERRORES Y RUTA BASE
 // ==========================================
-=======
 
 const { iniciarNotificacionesAutomaticas } = require('./src/jobs/notificacionJob');
 iniciarNotificacionesAutomaticas();
 
->>>>>>> 3093c43 (fix: Alinear rutas frontend-backend y mejorar CORS)
 
 app.get('/', (req, res) => {
     res.json({ 
