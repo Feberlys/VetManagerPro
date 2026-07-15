@@ -11,18 +11,16 @@ const port = parseInt(process.env.EMAIL_PORT, 10) || 465;
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST, // smtp-relay.brevo.com
   port: parseInt(process.env.EMAIL_PORT, 10), // 587
-  secure: false, // Forzamos false para evitar handshake SSL fallido
+  secure: false, 
   auth: {
     user: process.env.EMAIL_USER.trim(),
     pass: process.env.EMAIL_PASS.trim()
   },
-  // Aumentamos los tiempos de espera al máximo posible
-  connectionTimeout: 60000, 
-  socketTimeout: 60000,
-  // Configuramos explícitamente el protocolo de conexión
+  // --- CONFIGURACIÓN DE CONEXIÓN AGRESIVA ---
+  connectionTimeout: 10000, // 10s
+  greetingTimeout: 5000,    // 5s
   tls: {
-    rejectUnauthorized: false,
-    minVersion: 'TLSv1.2'
+    rejectUnauthorized: false
   }
 });
 
@@ -33,7 +31,7 @@ const enviarEmailGenérico = async ({ para, asunto, html }) => {
   }
 
   const opcionesElementales = {
-    from: `"VetManager Pro 🐾" <${process.env.EMAIL_USER}>`,
+    from: `"VetManager Pro 🐾" <b2261b001@smtp-brevo.com>`,
     to: para,
     subject: asunto,
     html: html
