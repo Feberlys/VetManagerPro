@@ -9,17 +9,15 @@ dns.setDefaultResultOrder('ipv4first');
 const port = parseInt(process.env.EMAIL_PORT, 10) || 465;
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com', // Forzamos el host
-  port: 465,
-  secure: true,
-  // Esta configuración es la más restrictiva posible
-  connectionTimeout: 60000, 
-  socketTimeout: 60000,
+  host: process.env.EMAIL_HOST,
+  port: parseInt(process.env.EMAIL_PORT, 10),
   auth: {
     user: process.env.EMAIL_USER.trim(),
     pass: process.env.EMAIL_PASS.trim()
-  }
+  },
+  // Brevo no necesita TLS: false o family: 4, funciona nativo
 });
+
 const enviarEmailGenérico = async ({ para, asunto, html }) => {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
       console.log("⚠️ Envío de correo omitido: Credenciales no configuradas");
