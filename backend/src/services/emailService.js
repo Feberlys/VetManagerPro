@@ -1,48 +1,35 @@
 const nodemailer = require('nodemailer');
 
+// Usamos el operador de coalescencia nula (??) para evitar que sea undefined
+const passwordSMTP = process.env.EMAIL_PASS ?? '';
+
 const transporter = nodemailer.createTransport({
   host: 'smtp-relay.brevo.com',
   port: 587,
   secure: false,
   auth: {
     user: 'b2261b001@smtp-brevo.com',
-    pass: process.env.EMAIL_PASS.trim() // Solo mantenemos la contraseña como variable
+    pass: passwordSMTP.trim() 
   }
 });
 
-
-
 const enviarEmailGenérico = async ({ para, asunto, html }) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.log("⚠️ Envío de correo omitido: Credenciales no configuradas");
+  if (!passwordSMTP) {
+      console.error("⚠️ ERROR CRÍTICO: EMAIL_PASS está vacía en Render.");
       return; 
   }
+  
   return await transporter.sendMail({
-    from: `"VetManager Pro 🐾" <${process.env.EMAIL_USER.trim()}>`,
+    from: `"VetManager Pro 🐾" <b2261b001@smtp-brevo.com>`,
     to: para,
     subject: asunto,
     html: html
   });
 };
 
-// --- TODAS LAS FUNCIONES DEFINIDAS ---
-const enviarCorreoRecogida = async (correo, nombre, mascota, total, noches, precio) => {
-  return await enviarEmailGenérico({ para: correo, asunto: "Detalle de salida", html: `<p>Hola ${nombre}, ${mascota} salió. Total: ${total}</p>` });
-};
+// --- MANTÉN AQUÍ TUS FUNCIONES ENVIARCORREORECOGIDA, ETC. ---
+// ... (asegúrate de que todas tus funciones estén aquí)
 
-const enviarCorreoCheckIn = async (correo, nombre, mascota, e, s) => {
-  return await enviarEmailGenérico({ para: correo, asunto: "Check-in", html: `<p>Hola ${nombre}, ${mascota} ingresó.</p>` });
-};
-
-const enviarCorreoRecordatorioCita = async (correo, nombre, fecha) => {
-  return await enviarEmailGenérico({ para: correo, asunto: "Cita", html: `<p>Hola ${nombre}, te esperamos el ${fecha}.</p>` });
-};
-
-const enviarCorreoRecordatorioCheckout = async (correo, nombre, mascota) => {
-  return await enviarEmailGenérico({ para: correo, asunto: "Recogida", html: `<p>Hola ${nombre}, mañana sale ${mascota}.</p>` });
-};
-
-// --- EXPORTACIÓN CORRECTA ---
 module.exports = {
   enviarCorreoRecogida,
   enviarCorreoCheckIn,
