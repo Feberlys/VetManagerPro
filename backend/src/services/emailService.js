@@ -13,8 +13,8 @@ const transporter = nodemailer.createTransport({
   port: parseInt(process.env.EMAIL_PORT, 10), // 587
   secure: false, // Brevo con puerto 587 usa STARTTLS, no conexión segura directa
   auth: {
-    user: process.env.EMAIL_USER.trim(),
-    pass: process.env.EMAIL_PASS.trim()
+    user: (process.env.EMAIL_USER || '').trim(),
+    pass: (process.env.EMAIL_PASS || '').trim()
   },
   // Esto permite que la conexión se inicie de forma insegura y luego se cifre
   requireTLS: true 
