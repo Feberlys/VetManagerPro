@@ -537,7 +537,7 @@ const GestionCitas = () => {
                   <td className="py-4 px-6"><span className="text-sm text-gray-500">{cita.Motivo}</span></td>
                   <td className="py-4 px-6">
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${obtenerClaseEstado(cita.EstadoCitaId)}`}>
-                      {cita.NombreEstado || obtenerNombreEstado(cita.EstadoCitaId)}
+                      {obtenerNombreEstado(cita.EstadoCitaId)}
                     </span>
                   </td>
                   <td className="py-4 px-6 text-right">
