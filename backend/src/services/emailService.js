@@ -1,4 +1,8 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns');
+
+// FORZAR IPv4: Esta es la pieza clave para que Render no falle al conectar con Gmail
+dns.setDefaultResultOrder('ipv4first');
 
 const port = parseInt(process.env.EMAIL_PORT, 10) || 465;
 
@@ -6,7 +10,7 @@ const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
   port: port,
   secure: port === 465,
-  family: 4, // Forzar IPv4
+  family: 4, // Fuerza el uso de IPv4 en la conexión SMTP
   auth: {
     user: process.env.EMAIL_USER?.trim(),
     pass: process.env.EMAIL_PASS?.trim() 
@@ -107,7 +111,6 @@ const enviarCorreoRecordatorioCheckout = async (correoCliente, nombreCliente, no
   });
 };
 
-// Exportamos todo AL FINAL del archivo para evitar el ReferenceError
 module.exports = {
   enviarCorreoRecogida,
   enviarCorreoCheckIn,
