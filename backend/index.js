@@ -97,13 +97,6 @@ mountRoute('/guarderia', guarderiaRoutes);
 const { iniciarNotificacionesAutomaticas } = require('./src/jobs/notificacionJob');
 iniciarNotificacionesAutomaticas();
 
-// ==========================================
-// 4. MANEJO DE ERRORES Y RUTA BASE
-// ==========================================
-
-const { iniciarNotificacionesAutomaticas } = require('./src/jobs/notificacionJob');
-iniciarNotificacionesAutomaticas();
-
 
 app.get('/', (req, res) => {
     res.json({ 
