@@ -11,6 +11,9 @@ const transporter = nodemailer.createTransport({
   port: port,
   secure: port === 465,
   family: 4, // Fuerza el uso de IPv4 en la conexión SMTP
+  connectionTimeout: 20000, // 20 segundos antes de dar timeout
+  greetingTimeout: 10000,   // 10 segundos para saludar al servidor
+  socketTimeout: 30000,     // 30 segundos de tiempo de vida del socket
   auth: {
     user: process.env.EMAIL_USER?.trim(),
     pass: process.env.EMAIL_PASS?.trim() 
