@@ -34,7 +34,13 @@ const corsOptions = {
 };
 
 
-app.use(cors(corsOptions));
+app.use(cors({
+    // DEBE SER EL DOMINIO DEL FRONTEND (con el -2)
+    origin: 'https://vetmanagerpro-2.onrender.com', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
 app.use(express.json());
 
 // Corregir rutas con doble /api/api/ antes de montar las rutas
